@@ -1,0 +1,18 @@
+# Builds and tests the needle package on every pull request and push to main.
+name: needle-ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: needle-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    uses: ./.github/workflows/needle-build.yml

@@ -1,0 +1,15 @@
+#!/bin/sh
+# Build needle (Qt) and needle-engine (Rust) into app/build/.
+set -eu
+
+ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
+mkdir -p "$ROOT/build"
+
+cargo build --release --locked --manifest-path "$ROOT/../engine/Cargo.toml"
+cp "$ROOT/../engine/target/release/needle-engine" "$ROOT/build/needle-engine"
+
+cd "$ROOT/build"
+qmake6 "$ROOT/needle.pro"
+make -j"$(nproc)"
+
+echo "Built $ROOT/build/needle and $ROOT/build/needle-engine"

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- the wordmark's needle: a record's edge, its spindle and the tonearm, on a dark tile -->
+  <rect width="64" height="64" rx="14" fill="#161616"/>
+  <g fill="none" stroke="#e68e0d" stroke-width="4" stroke-linecap="round" transform="translate(8 8)">
+    <circle cx="24" cy="24" r="18" opacity=".45"/>
+    <path d="M24 24 L38 9"/>
+  </g>
+  <circle cx="32" cy="32" r="4.4" fill="#e68e0d"/>
+</svg>

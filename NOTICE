@@ -1,0 +1,30 @@
+needle
+Copyright (c) 2026 Kurt Lieber
+
+needle (the app and needle-engine) is under the MIT License: LICENSE.
+
+needle is not affiliated with, or endorsed by, Spotify. It plays through librespot, an open-source Spotify
+client that is not Spotify's own, and it needs a Spotify Premium account. Spotify's terms may not allow
+unofficial clients, so decide for yourself before you use it (ADR 0003, docs/adr/).
+
+
+Bundled in the package
+----------------------
+  Archivo        the font (app/src/fonts/). Copyright 2020 The Archivo Project Authors
+                 (https://github.com/Omnibus-Type/Archivo). SIL Open Font License 1.1: app/src/fonts/OFL.txt.
+
+needle-engine is built with the Rust crates that engine/Cargo.lock pins, linked into the binary. Their
+licenses:
+  librespot      MIT (https://github.com/librespot-org/librespot)
+  most others    MIT, Apache-2.0, or either; a few BSD, Zlib, Unicode-3.0 or Unlicense
+  MPL-2.0        mpris-server, symphonia and priority-queue (the last two via librespot). needle uses them
+                 unmodified; their source is on crates.io at the versions in engine/Cargo.lock.
+
+`cargo tree --manifest-path engine/Cargo.toml` lists every crate; each one's license is in its Cargo.toml.
+
+
+Libraries from the system (linked at run time, not bundled)
+-----------------------------------------------------------
+  Qt 6           LGPL-3.0 (qt6-base, qt6-declarative, qt6-wayland)
+  PulseAudio     LGPL-2.1-or-later (libpulse)
+  OpenSSL        Apache-2.0

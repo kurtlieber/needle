@@ -1,0 +1,2 @@
+# release tarballs leave out the design docs and mockups (14 MB of screenshots)
+/docs export-ignore

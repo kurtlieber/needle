@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=needle
+GenericName=Music review
+Comment=Review Spotify discoveries and likes against your Baseline
+Exec=needle
+Icon=needle
+Terminal=false
+Categories=AudioVideo;Audio;Player;
+Keywords=spotify;music;review;rating;
+StartupWMClass=needle

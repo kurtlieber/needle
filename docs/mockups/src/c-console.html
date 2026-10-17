@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>needle: C, Console</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  .ribbon { position: absolute; z-index: 1; left: 28px; right: 28px; top: 72px; height: 196px; }
+  .ribbon canvas { position: absolute; left: 0; top: 0; border-radius: 12px; }
+  .ribbon .axis { position: absolute; left: 0; right: 0; top: 168px; display: flex; justify-content: space-between; color: var(--text-secondary); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+  .playhead { position: absolute; top: -6px; height: 166px; width: 2px; background: var(--bright-foreground); border-radius: 1px; box-shadow: 0 0 0 1px rgb(0 0 0 / 0.5); }
+  .playhead::before { content: ""; position: absolute; left: -5px; top: -2px; width: 12px; height: 12px; border-radius: 50%; background: var(--bright-foreground); box-shadow: 0 0 0 3px rgb(0 0 0 / 0.55); }
+  .playhead .t { position: absolute; left: 10px; top: -6px; font-size: 12px; font-weight: 600; color: var(--text-strong); white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+  .body { position: absolute; z-index: 1; left: 28px; right: 28px; top: 292px; bottom: 112px; display: grid; grid-template-columns: 336px 1fr 340px; gap: 40px; }
+
+  .track .row1 { display: flex; gap: 18px; align-items: flex-end; }
+  .track .cover { width: 128px; height: 128px; border-radius: 12px; overflow: hidden; flex: none; box-shadow: 0 14px 34px rgb(0 0 0 / 0.5); }
+  .title { font-size: 34px; }
+  .artist { font-size: 17px; margin-top: 6px; }
+  .meta { margin-top: 2px; }
+  .why { margin-top: 20px; }
+  .styles { margin-top: 18px; display: flex; flex-direction: column; gap: 9px; }
+  .style { display: grid; grid-template-columns: 92px 1fr 34px; gap: 10px; align-items: center; font-size: 13px; }
+  .style .bar { height: 6px; border-radius: 3px; background: rgb(255 255 255 / 0.06); position: relative; }
+  .style .bar b { position: absolute; inset: 0 auto 0 0; border-radius: 3px; background: var(--foreground); opacity: 0.6; }
+  .style .v { color: var(--text-secondary); text-align: end; font-variant-numeric: tabular-nums; }
+  .styles-h { font-size: 13px; font-weight: 600; color: var(--text); margin-top: 22px; }
+
+  .console { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; padding: 18px 14px 14px; border-radius: 18px;
+    background: rgb(0 0 0 / 0.28); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.05); }
+  .strip { display: flex; flex-direction: column; align-items: center; min-width: 0; }
+  .strip .v { font-size: 22px; font-weight: 650; color: var(--text-strong); font-variant-numeric: tabular-nums; line-height: 1.1; font-stretch: 105%; }
+  .strip .v small { font-size: 11px; color: var(--text-secondary); font-weight: 500; margin-left: 2px; }
+  .strip .y { font-size: 12px; color: var(--text-secondary); font-variant-numeric: tabular-nums; margin-top: 2px; }
+  .strip .y b { color: var(--text); font-weight: 600; }
+  .strip .pole { font-size: 11px; color: var(--text-secondary); margin-top: 10px; white-space: nowrap; }
+  .strip .pole.bottom { margin-top: 6px; margin-bottom: 0; }
+  .strip svg { margin-top: 6px; overflow: visible; }
+  .strip .n { margin-top: 10px; font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; }
+  .strip .flag { margin-top: 6px; height: 22px; padding-inline: 8px; border-radius: 11px; font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
+    color: var(--text-strong); background: rgb(var(--accent-rgb) / 0.14); box-shadow: inset 0 0 0 1px rgb(var(--accent-rgb) / 0.4); }
+  .strip .flag.none { visibility: hidden; }
+  .console-legend { grid-column: 1 / -1; display: flex; justify-content: center; gap: 22px; margin-top: 14px; color: var(--text-secondary); font-size: 12px; }
+  .console-legend span { display: inline-flex; align-items: center; gap: 8px; }
+
+  .pad h2 { font-size: 13px; font-weight: 600; color: var(--text); }
+  .keys { margin-top: 12px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+  .key { height: 72px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+    background: linear-gradient(to bottom, rgb(255 255 255 / 0.07), rgb(255 255 255 / 0.03));
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08), inset 0 -2px 0 rgb(0 0 0 / 0.5), 0 2px 6px rgb(0 0 0 / 0.35);
+    color: var(--light-foreground); }
+  .key svg { width: 22px; height: 22px; }
+  .key .d { font-size: 12px; font-weight: 650; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .key.hover { color: var(--accent); background: linear-gradient(to bottom, rgb(var(--accent-rgb) / 0.16), rgb(var(--accent-rgb) / 0.08)); }
+  .key.hover .d { color: var(--text); }
+  .key.on { color: var(--accent); }
+  .wide { margin-top: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .wide .key { flex-direction: row; height: 52px; gap: 10px; color: var(--text); font-weight: 600; font-size: 14px; }
+  .wide .key svg { width: 18px; height: 18px; }
+  .wide .key.dis svg { color: var(--red); }
+  .pad .hint { margin-top: 12px; }
+  .next { margin-top: 26px; }
+  .next ol { list-style: none; margin-top: 10px; display: flex; flex-direction: column; gap: 10px; }
+  .next li { display: grid; grid-template-columns: 40px 1fr; gap: 12px; align-items: center; }
+  .next img { width: 40px; height: 40px; border-radius: 6px; object-fit: cover; outline: 1px solid rgb(255 255 255 / 0.1); outline-offset: -1px; }
+  .next .t { font-size: 13.5px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .next .a { font-size: 12.5px; color: var(--text-secondary); }
+
+  .dock { position: absolute; z-index: 2; left: 0; right: 0; bottom: 0; height: 100px; padding: 0 28px;
+    display: flex; align-items: center; gap: 28px; background: linear-gradient(to bottom, rgb(13 13 13 / 0), rgb(13 13 13 / 0.9) 45%); }
+  .beat { display: flex; align-items: center; gap: 12px; }
+  .beat .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 5px rgb(var(--accent-rgb) / 0.16), 0 0 20px rgb(var(--accent-rgb) / 0.85); }
+  .beat .n { font-stretch: 125%; font-weight: 300; font-size: 34px; color: var(--text-strong); letter-spacing: -0.02em; line-height: 1; }
+  .beat .u { font-stretch: 125%; font-weight: 600; font-size: 12px; color: var(--text-secondary); }
+  .qprog { display: flex; align-items: center; gap: 12px; color: var(--text-secondary); font-size: 13px; white-space: nowrap; }
+  .qbar { width: 220px; height: 6px; border-radius: 3px; background: rgb(255 255 255 / 0.08); position: relative; }
+  .qbar b { position: absolute; inset: 0 auto 0 0; width: 35%; border-radius: 3px; background: var(--foreground); }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="backdrop" style="background-image:url(covers/tr-glass-lantern.svg); opacity:.26"></div>
+  <div class="backdrop-veil"></div>
+
+  <header class="topbar">
+    <div class="wordmark"><span id="logo"></span>needle</div>
+    <nav class="tabs" aria-label="Review queues">
+      <div class="tab active">Discoveries <span class="count">7 of 20</span></div>
+      <div class="tab">Rate your likes <span class="count">361</span></div>
+    </nav>
+    <div class="spacer"></div>
+    <div class="status"><span class="dot" style="background:var(--light-foreground)"></span>haystack is unreachable. 2 verdicts will send when it’s back.</div>
+    <div class="iconbtn" aria-label="Keyboard shortcuts" id="kb"></div>
+  </header>
+
+  <section class="ribbon" aria-label="Song map">
+    <canvas id="spec" width="1544" height="160"></canvas>
+    <div class="playhead" id="ph"><span class="t">1:12</span></div>
+    <div class="axis" id="axis"></div>
+  </section>
+
+  <div class="body">
+    <section class="track">
+      <div class="row1">
+        <div class="cover"><img class="cover-img" src="covers/tr-glass-lantern.svg" alt=""></div>
+      </div>
+      <h1 class="title" style="margin-top:18px">Glass Lantern</h1>
+      <div class="artist">Moth Signal</div>
+      <div class="meta">Single, 2018</div>
+      <p class="why">Sounds like <strong>Paper Tide</strong> by Velvet Static (similarity 0.96). Found through Deezer artist radio as an exploration pick.</p>
+      <div class="styles-h">Styles</div>
+      <div class="styles" id="styles"></div>
+    </section>
+
+    <section>
+      <div class="console" id="console"></div>
+    </section>
+
+    <section class="pad">
+      <h2>Your verdict</h2>
+      <div class="keys" id="keys"></div>
+      <div class="wide">
+        <div class="key" id="pass"></div>
+        <div class="key dis" id="dislike"></div>
+      </div>
+      <div class="hint"><span class="kbd">Shift</span> + number rates and plays the next track</div>
+      <div class="next">
+        <h2>Up next</h2>
+        <ol>
+          <li><img src="covers/tr-close-behind.svg" alt=""><div><div class="t">Close Behind</div><div class="a">Grey Orchard</div></div></li>
+          <li><img src="covers/tr-lemon-soda.svg" alt=""><div><div class="t">Lemon Soda</div><div class="a">Saffron Hill</div></div></li>
+          <li><img src="covers/tr-blackout.svg" alt=""><div><div class="t">Blackout (Kilo Tide Remix)</div><div class="a">Neon Basin</div></div></li>
+        </ol>
+      </div>
+    </section>
+  </div>
+
+  <footer class="dock">
+    <div class="transport">
+      <div class="tbtn" aria-label="Previous" id="prev"></div>
+      <div class="tbtn play" aria-label="Pause" id="pause"></div>
+      <div class="tbtn" aria-label="Next" id="next"></div>
+    </div>
+    <span class="time">1:12 / 2:59</span>
+    <div class="beat"><span class="dot" aria-hidden="true"></span><span class="n">102</span><span class="u">BPM</span></div>
+    <div class="spacer"></div>
+    <div class="qprog">This week’s Discoveries <div class="qbar"><b></b></div> 7 of 20 reviewed</div>
+  </footer>
+</div>
+
+<script src="data.js"></script>
+<script>
+  const $ = id => document.getElementById(id);
+  $("logo").innerHTML = ICON.needle; $("kb").innerHTML = ICON.keyboard;
+  $("prev").innerHTML = ICON.prev; $("pause").innerHTML = ICON.pause; $("next").innerHTML = ICON.next;
+  $("keys").innerHTML = [1,2,3,4,5].map(i => `<div class="key ${i<=3?'hover':''}" aria-label="Rate ${i} star${i>1?'s':''}">${i<=3?ICON.star:ICON.starOutline}<span class="d">${i}</span></div>`).join("");
+  $("pass").innerHTML = ICON.pass + 'Pass <span class="kbd">P</span>';
+  $("dislike").innerHTML = ICON.ban + 'Dislike <span class="kbd">X</span>';
+  $("styles").innerHTML = TRACK.styles.map(([s, v]) => `<div class="style"><span>${s}</span><span class="bar"><b style="width:${v*100/0.3}%"></b></span><span class="v">${v.toFixed(2)}</span></div>`).join("");
+
+  // channel strips: meter = this track, fader cap = baseline mean, shaded band = your middle 50%
+  (() => {
+    const H = 336, W = 72, x0 = W / 2;
+    let html = "";
+    for (const t of TRAITS) {
+      const Y = v => H - t.norm(v) * H;
+      let ticks = "";
+      for (let k = 0; k <= 4; k++) ticks += `<line x1="${x0 - 14}" x2="${x0 - 8}" y1="${H * k / 4}" y2="${H * k / 4}" stroke="var(--dark-foreground)"/><line x1="${x0 + 8}" x2="${x0 + 14}" y1="${H * k / 4}" y2="${H * k / 4}" stroke="var(--dark-foreground)"/>`;
+      const flag = t.outside ? `<span class="flag">${t.outside === "below" ? "Below" : "Above"} your usual</span>` : `<span class="flag none">.</span>`;
+      html += `<div class="strip">
+        <div class="v">${t.fmt(t.song)}${t.unit ? `<small>${t.unit}</small>` : ""}</div>
+        <div class="y">Yours <b>${t.fmt(t.base)}</b></div>
+        ${flag}
+        <div class="pole">${t.poles[1]}</div>
+        <svg width="${W}" height="${H}" aria-hidden="true">
+          ${ticks}
+          <rect x="${x0 - 2}" y="0" width="4" height="${H}" rx="2" fill="var(--darker-background)"/>
+          <rect x="${x0 - 18}" y="${Y(t.hi)}" width="36" height="${Y(t.lo) - Y(t.hi)}" rx="4" fill="var(--foreground)" fill-opacity="0.09" stroke="var(--foreground)" stroke-opacity="0.22"/>
+          <rect x="${x0 - 4}" y="${Y(t.song)}" width="8" height="${H - Y(t.song)}" rx="4" fill="var(--accent)" style="filter:drop-shadow(0 0 8px rgb(var(--accent-rgb) / 0.55))"/>
+          <rect x="${x0 - 24}" y="${Y(t.base) - 7}" width="48" height="14" rx="4" fill="#2b2b2b" stroke="#000" stroke-width="1"/>
+          <rect x="${x0 - 18}" y="${Y(t.base) - 1}" width="36" height="2" rx="1" fill="var(--foreground)"/>
+        </svg>
+        <div class="pole bottom">${t.poles[0]}</div>
+        <div class="n">${t.name.replace("Instrumentalness", "Instrumental&shy;ness")}</div>
+      </div>`;
+    }
+    html += `<div class="console-legend">
+      <span><svg width="8" height="18"><rect width="8" height="18" rx="4" fill="var(--accent)"/></svg>This track</span>
+      <span><svg width="30" height="14"><rect x="1" y="1" width="28" height="12" rx="4" fill="#2b2b2b" stroke="#000"/><rect x="5" y="6" width="20" height="2" fill="var(--foreground)"/></svg>Your baseline</span>
+      <span><svg width="20" height="16"><rect x="1" y="1" width="18" height="14" rx="3" fill="var(--foreground)" fill-opacity="0.09" stroke="var(--foreground)" stroke-opacity="0.22"/></svg>Your middle 50%</span>
+    </div>`;
+    $("console").innerHTML = html;
+  })();
+
+  // song map: a whole-track spectrogram; played part bright, the rest dim; beat grid at the measured BPM
+  (() => {
+    const c = $("spec"), ctx = c.getContext("2d"), W = c.width, H = c.height;
+    const dur = TRACK.duration, pos = TRACK.position, cols = 772, rows = 64, cw = W / cols, rh = H / rows;
+    const r = rng(3);
+    const section = s => s < 14 ? 0.25 : s < 29 ? 0.25 + (s - 14) / 15 * 0.5 : s < 60 ? 1 : s < 88 ? 0.42 : s < 103 ? 0.42 + (s - 88) / 15 * 0.5 : s < 150 ? 1 : s < 165 ? 0.5 : 0.2;
+    ctx.fillStyle = "rgb(0 0 0 / 0.35)"; ctx.beginPath(); ctx.roundRect(0, 0, W, H, 12); ctx.fill();
+    ctx.save(); ctx.beginPath(); ctx.roundRect(0, 0, W, H, 12); ctx.clip();
+    for (let i = 0; i < cols; i++) {
+      const s = i / cols * dur, e = section(s), played = s <= pos;
+      const beatPhase = (s * 102 / 60) % 1, kick = beatPhase < 0.18 ? 1 : 0.55;
+      for (let j = 0; j < rows; j++) {
+        const f = j / (rows - 1);
+        const sub = Math.exp(-((f - 0.05) ** 2) / 0.004) * (e > 0.9 ? 1 : 0.35) * kick;
+        const mid = Math.exp(-((f - 0.36) ** 2) / 0.025) * 0.75 * e;
+        const hi = Math.exp(-((f - 0.7) ** 2) / 0.03) * 0.35 * e;
+        let v = Math.max(sub, mid, hi) * (0.65 + 0.5 * r());
+        v = Math.min(1, v);
+        if (v < 0.06) continue;
+        ctx.fillStyle = `rgb(230 142 13 / ${(played ? 0.95 : 0.28) * v})`;
+        ctx.fillRect(i * cw, H - (j + 1) * rh, cw, rh);
+      }
+    }
+    // bar lines every 4 beats
+    const bar = 4 * 60 / 102;
+    for (let s = 0; s < dur; s += bar) { ctx.fillStyle = "rgb(255 255 255 / 0.035)"; ctx.fillRect(s / dur * W, 0, 1, H); }
+    ctx.restore();
+    $("ph").style.left = (pos / dur * 1544) + "px";
+    $("axis").innerHTML = [0, 30, 60, 90, 120, 150].map(s => `<span>${fmtTime(s)}</span>`).join("") + `<span>${fmtTime(dur)}</span>`;
+  })();
+</script>
+</body>
+</html>

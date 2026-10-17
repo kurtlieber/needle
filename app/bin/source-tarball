@@ -1,0 +1,13 @@
+#!/bin/sh
+# Write pkgbuild/needle-$VERSION.tar.gz: the repository as committed, plus uncommitted edits to tracked files
+# (untracked files are left out: git add them first). The PKGBUILD builds from it.
+set -eu
+
+ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
+VERSION="$(cat "$ROOT/../VERSION")"
+TOP="$(git -C "$ROOT" rev-parse --show-toplevel)"  # archive from the top: in a subdirectory it archives only that
+TREE="$(git -C "$TOP" stash create)"
+OUT="$ROOT/pkgbuild/needle-$VERSION.tar.gz"
+
+git -C "$TOP" archive --format=tar.gz --prefix="needle-$VERSION/" -o "$OUT" "${TREE:-HEAD}"
+echo "$OUT"

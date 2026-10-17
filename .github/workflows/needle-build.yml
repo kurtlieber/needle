@@ -1,0 +1,64 @@
+# Builds the needle package in an Arch container: makepkg runs the PKGBUILD, check() included, as a non-root user.
+# Called by needle-ci and needle-release. Uploads artifact `needle-pkg` (unsigned: needle-release signs it).
+name: needle-build
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: Commit, branch or tag to build
+        type: string
+        default: ''
+    outputs:
+      package:
+        description: File name of the built package
+        value: ${{ jobs.build.outputs.package }}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    container: archlinux:base-devel
+    outputs:
+      package: ${{ steps.makepkg.outputs.package }}
+    steps:
+      - name: Install build dependencies
+        run: |
+          pacman -Syu --noconfirm --needed git rust qt6-base qt6-declarative qt6-wayland libpulse openssl dbus xdg-utils
+          git config --system --add safe.directory '*'
+          useradd -m builder
+
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: /home/builder/.cargo/registry
+          key: cargo-registry-${{ hashFiles('engine/Cargo.lock') }}
+          restore-keys: cargo-registry-
+
+      - name: makepkg
+        id: makepkg
+        shell: bash
+        run: |
+          set -euo pipefail
+          app/bin/source-tarball
+          # makepkg refuses to run as root
+          chown -R builder: "$GITHUB_WORKSPACE" /home/builder
+          (cd app/pkgbuild && sudo -u builder env MAKEFLAGS="-j$(nproc)" makepkg --noconfirm)
+          cd app/pkgbuild
+          pkg="$(ls needle-*.pkg.tar.zst)"
+          echo "package=$pkg" >> "$GITHUB_OUTPUT"
+          echo "Built $pkg"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: needle-pkg
+          path: app/pkgbuild/needle-*.pkg.tar.zst
+          if-no-files-found: error
+          retention-days: 14

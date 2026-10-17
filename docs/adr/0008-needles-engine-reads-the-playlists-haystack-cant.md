@@ -1,0 +1,7 @@
+# needle's engine reads the playlists haystack can't
+
+The listener reviews the songs of any playlist in their Spotify library (the Playlist review), and many of those are Followed playlists (9 of 31 in the library this was built on). Spotify's 2026 developer mode answers 403 when haystack asks the Web API for the songs of a playlist it doesn't own, but librespot, which needle's engine already uses to play (ADR 0003), reads them the way Spotify's own clients do, with each song's metadata. So haystack lists every playlist (`/me/playlists` still works), reads the songs of the ones the listener owns, and marks the rest for the engine. needle has the engine read those one at a time and sends the songs on (`PUT /v1/playlists/{id}/tracks`), and haystack stores them like its own. A playlist is read again only when its `snapshot_id` changes; librespot's revision is the same bytes.
+
+**Considered Options**: leaving Followed playlists out (a third of the library); copying them into playlists the listener owns (a Spotify write they didn't ask for, and the copies go stale); a librespot session on the server (a second Spotify login, for a read needle can already make).
+
+**Consequences**: a Followed playlist's songs reach haystack only while needle runs with the engine signed in; until then its tile says why it can't be picked. The engine reads metadata at five songs a second, half of librespot's own limit, so a song that starts meanwhile never waits: a 200-song playlist takes about 40 s the first time. Spotify could close this path as it closed the Web API one.

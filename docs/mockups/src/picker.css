@@ -1,0 +1,75 @@
+/* Shared by the playlist-picker mockups. Builds on base.css (Omarchy tokens, top bar, kbd, chips). */
+:root {
+  --focus: var(--bright-foreground);
+  --selected: var(--accent);
+  --on-accent: #121212;
+  --pass: #8a8a8d;           /* light-foreground: a Pass reads neutral */
+  --none: rgb(255 255 255 / 0.07);
+}
+
+.topbar .tab.playlists svg { width: 14px; height: 14px; margin-inline-start: -2px; }
+
+/* the session dock: what you've picked, and the one primary action */
+.session {
+  position: absolute; z-index: 3; inset-inline: 0; bottom: 0; height: 96px; padding-inline: 28px;
+  display: flex; align-items: center; gap: 24px;
+  background: linear-gradient(to bottom, rgb(13 13 13 / 0), rgb(13 13 13 / 0.94) 30%);
+}
+.session .stack { display: flex; padding-inline-start: 10px; }
+.session .stack img, .session .stack .ph {
+  width: 48px; height: 48px; border-radius: 8px; margin-inline-start: -10px; object-fit: cover;
+  outline: 1px solid rgb(255 255 255 / 0.1); outline-offset: -1px;
+  box-shadow: 0 0 0 3px var(--dark-background), 0 6px 14px rgb(0 0 0 / 0.5);
+}
+.session .what { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.session .what .l1 { font-size: 15px; font-weight: 600; color: var(--text-strong); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.session .what .l2 { font-size: 13px; color: var(--text-secondary); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.session .opts { display: flex; gap: 20px; margin-inline-start: auto; }
+
+.switch { display: inline-flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text); white-space: nowrap; }
+.switch i { width: 34px; height: 20px; border-radius: 10px; background: rgb(255 255 255 / 0.12); position: relative; flex: none; }
+.switch i::after { content: ""; position: absolute; top: 3px; left: 3px; width: 14px; height: 14px; border-radius: 50%; background: var(--light-foreground); }
+.switch.on i { background: rgb(var(--accent-rgb) / 0.35); }
+.switch.on i::after { left: 17px; background: var(--accent); }
+
+.btn {
+  height: 44px; padding-inline: 18px 14px; border-radius: 12px; border: 0;
+  display: inline-flex; align-items: center; gap: 10px; white-space: nowrap;
+  font: 600 14px/1 var(--font); color: var(--text); background: rgb(255 255 255 / 0.06);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.06);
+}
+.btn svg { width: 18px; height: 18px; }
+.btn.primary { background: var(--accent); color: var(--on-accent); box-shadow: 0 6px 20px rgb(var(--accent-rgb) / 0.25); }
+.btn.primary .kbd { color: var(--on-accent); background: rgb(0 0 0 / 0.12); box-shadow: inset 0 -1px 0 rgb(0 0 0 / 0.25); }
+
+/* keyboard focus: a ring that is not the selection colour */
+.focus-ring { outline: 2px solid var(--focus); outline-offset: 4px; }
+
+/* a selected item always carries a check, never colour alone */
+.check {
+  width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--accent); color: var(--on-accent); box-shadow: 0 0 0 3px var(--background), 0 4px 10px rgb(0 0 0 / 0.5);
+}
+.check svg { width: 16px; height: 16px; }
+.check.off { background: rgb(18 18 18 / 0.7); box-shadow: inset 0 0 0 1.5px rgb(255 255 255 / 0.55), 0 4px 10px rgb(0 0 0 / 0.4); }
+
+.search {
+  height: 36px; min-width: 260px; padding-inline: 12px 8px; border-radius: 10px; display: inline-flex; align-items: center; gap: 10px;
+  background: rgb(255 255 255 / 0.05); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.07); color: var(--text-secondary); font-size: 13px;
+}
+.search svg { width: 16px; height: 16px; }
+.search .kbd { margin-inline-start: auto; }
+
+.seg { display: flex; gap: 2px; padding: 3px; border-radius: 10px; background: rgb(0 0 0 / 0.35); }
+.seg span { height: 30px; padding-inline: 12px; border-radius: 7px; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; color: var(--text-secondary); white-space: nowrap; }
+.seg span b { font-weight: 500; font-variant-numeric: tabular-nums; color: var(--dark-foreground); }
+.seg span.on { background: var(--surface); color: var(--text-strong); box-shadow: 0 1px 2px rgb(0 0 0 / 0.5); }
+.seg span.on b { color: var(--text-secondary); }
+
+.followed { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 600; color: var(--text-secondary);
+  padding: 2px 7px; border-radius: 6px; background: rgb(255 255 255 / 0.06); white-space: nowrap; }
+
+.keys { display: flex; gap: 18px; color: var(--text-secondary); font-size: 12.5px; white-space: nowrap; }
+.keys span { display: inline-flex; gap: 6px; align-items: center; }
+
+.cover-ph { display: grid; place-items: center; background: linear-gradient(135deg, #2a2a2a, #1a1a1a); color: var(--dark-foreground); }
