@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>needle: B, Turntable</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  .stage { position: absolute; z-index: 1; left: 0; top: 60px; width: 860px; height: 812px; }
+  .stage svg { position: absolute; inset: 0; }
+
+  .plinth { position: absolute; left: 40px; bottom: 26px; display: flex; align-items: flex-end; gap: 18px; }
+  .led { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px rgb(var(--accent-rgb) / 0.18), 0 0 18px rgb(var(--accent-rgb) / 0.9); margin-bottom: 14px; }
+  .bpm .n { font-stretch: 125%; font-weight: 300; font-size: 64px; line-height: 0.9; color: var(--text-strong); letter-spacing: -0.03em; }
+  .bpm .u { font-stretch: 125%; font-weight: 600; font-size: 13px; color: var(--text-secondary); margin-left: 6px; }
+  .bpm-sub { color: var(--text-secondary); font-size: 13px; margin-top: 6px; }
+  .bpm-sub b { color: var(--text); font-variant-numeric: tabular-nums; }
+  .armtime { position: absolute; right: 38px; top: 228px; text-align: end; }
+  .armtime .time { font-size: 13px; }
+
+  .panel { position: absolute; z-index: 1; left: 880px; right: 28px; top: 84px; }
+  .title { font-size: 50px; }
+  .artist { margin-top: 10px; }
+  .meta { margin-top: 4px; }
+  .why { margin-top: 16px; max-width: 64ch; }
+  .chips { display: flex; gap: 8px; margin-top: 14px; }
+  .summary { margin-top: 26px; }
+
+  .print { margin-top: 26px; display: grid; grid-template-columns: 360px 1fr; gap: 40px; align-items: center; }
+  #radar { overflow: visible; }
+  .table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  .table th { text-align: end; font-size: 12px; font-weight: 500; color: var(--text-secondary); padding: 0 0 8px; }
+  .table th:first-child { text-align: start; }
+  .table td { height: 44px; border-top: 1px solid rgb(255 255 255 / 0.05); text-align: end; white-space: nowrap; }
+  .table td:first-child { text-align: start; color: var(--text); font-weight: 500; }
+  .table td.song { color: var(--text-strong); font-weight: 650; font-size: 16px; }
+  .table td.base { color: var(--text-secondary); width: 70px; }
+  .table td small { font-size: 11px; color: var(--text-secondary); font-weight: 500; margin-left: 3px; }
+  .table td .sw { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
+
+  .toast { position: absolute; z-index: 3; left: 50%; transform: translateX(-50%); bottom: 142px;
+    display: flex; align-items: center; gap: 12px; height: 44px; padding-inline: 14px 8px; border-radius: 12px;
+    background: var(--lighter-background); color: var(--text); font-size: 13.5px; white-space: nowrap;
+    box-shadow: 0 12px 32px rgb(0 0 0 / 0.5), 0 0 0 1px rgb(255 255 255 / 0.06); }
+  .toast svg { width: 18px; height: 18px; color: var(--accent); }
+  .toast .undo { height: 30px; padding-inline: 10px; border-radius: 8px; display: inline-flex; align-items: center; gap: 8px; background: rgb(255 255 255 / 0.06); font-weight: 600; }
+
+  .dock { position: absolute; z-index: 2; left: 0; right: 0; bottom: 0; height: 128px; padding: 0 28px;
+    display: grid; grid-template-columns: auto 1fr auto; gap: 36px; align-items: center;
+    background: linear-gradient(to bottom, rgb(13 13 13 / 0), rgb(13 13 13 / 0.94) 40%); }
+  .strip { display: flex; flex-direction: column; gap: 8px; justify-self: center; }
+  .strip-cells { display: flex; gap: 4px; }
+  .cell { width: 26px; height: 30px; border-radius: 6px; display: grid; place-items: center; font-size: 11.5px; font-weight: 650;
+    background: rgb(255 255 255 / 0.05); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .cell svg { width: 12px; height: 12px; }
+  .cell.r { color: var(--text); }
+  .cell.r svg { color: var(--accent); width: 9px; height: 9px; margin-left: 1px; }
+  .cell.r span { display: inline-flex; align-items: center; }
+  .cell.d { color: var(--red); }
+  .cell.cur { background: transparent; box-shadow: inset 0 0 0 2px var(--accent); color: var(--text-strong); }
+  .strip-label { font-size: 12px; color: var(--text-secondary); text-align: center; }
+  .stars .star { width: 46px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="backdrop" style="background-image:url(covers/tr-glass-lantern.svg); opacity:.36"></div>
+  <div class="backdrop-veil" style="background: radial-gradient(70% 80% at 26% 52%, transparent 0%, rgb(18 18 18 / .6) 55%, var(--background) 85%), linear-gradient(to bottom, rgb(18 18 18 / .2), rgb(18 18 18 / .8))"></div>
+
+  <header class="topbar">
+    <div class="wordmark"><span id="logo"></span>needle</div>
+    <nav class="tabs" aria-label="Review queues">
+      <div class="tab active">Discoveries <span class="count">8 of 20</span></div>
+      <div class="tab">Rate your likes <span class="count">361</span></div>
+    </nav>
+    <div class="spacer"></div>
+    <div class="status"><span class="dot"></span>Synced with haystack</div>
+    <div class="iconbtn" aria-label="Keyboard shortcuts" id="kb"></div>
+  </header>
+
+  <section class="stage">
+    <svg id="deck" width="860" height="812" aria-hidden="true"></svg>
+    <div class="plinth">
+      <div class="led" aria-hidden="true"></div>
+      <div>
+        <div class="bpm"><span class="n">102</span><span class="u">BPM</span></div>
+        <div class="bpm-sub">Yours: <b>126</b></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h1 class="title">Glass Lantern</h1>
+    <div class="artist">Moth Signal</div>
+    <div class="meta">Single, 2018</div>
+    <p class="why">Picked because it sounds like <strong>Paper Tide</strong> by Velvet Static (similarity 0.96). Found through Deezer artist radio, as one of this week’s exploration picks.</p>
+    <div class="chips" id="chips"></div>
+    <p class="summary" id="summary"></p>
+    <div class="print">
+      <svg id="radar" width="360" height="360" aria-hidden="true"></svg>
+      <table class="table">
+        <thead><tr><th>Trait</th><th><span class="sw" style="background:var(--accent)"></span>This track</th><th><span class="sw" style="box-shadow: inset 0 0 0 2px var(--foreground)"></span>Yours</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="toast" role="status"><span id="ok"></span>Rated 4 stars. Added to Liked Songs and To Rip.<span class="undo">Undo <span class="kbd">U</span></span></div>
+
+  <footer class="dock">
+    <div class="transport">
+      <div class="tbtn" aria-label="Previous" id="prev"></div>
+      <div class="tbtn play" aria-label="Pause" id="pause"></div>
+      <div class="tbtn" aria-label="Next" id="next"></div>
+      <span class="time" style="margin-left:14px">1:12 / 2:59</span>
+    </div>
+    <div class="strip">
+      <div class="strip-cells" id="strip"></div>
+      <div class="strip-label">This week’s Discoveries: 8 of 20 reviewed</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="vbtn dislike" id="dislike"></div>
+      <div class="vbtn" id="pass"></div>
+      <div class="stars" id="stars" role="radiogroup" aria-label="Rating"></div>
+    </div>
+  </footer>
+</div>
+
+<script src="data.js"></script>
+<script>
+  const $ = id => document.getElementById(id);
+  $("logo").innerHTML = ICON.needle; $("kb").innerHTML = ICON.keyboard;
+  $("prev").innerHTML = ICON.prev; $("pause").innerHTML = ICON.pause; $("next").innerHTML = ICON.next;
+  $("ok").innerHTML = ICON.check;
+  $("dislike").innerHTML = ICON.ban + '<span class="label">Dislike</span><span class="kbd">X</span>';
+  $("pass").innerHTML = ICON.pass + 'Pass<span class="kbd">P</span>';
+  $("stars").innerHTML = [1,2,3,4,5].map(i => `<div class="star ${i<=4?'lit':''}" aria-label="${i} star${i>1?'s':''}">${i<=4?ICON.star:ICON.starOutline}</div>`).join("");
+  $("chips").innerHTML = TRACK.styles.map(([s]) => `<span class="chip">${s}</span>`).join("");
+  $("summary").innerHTML = summarySentence();
+
+  // review strip: one cell per pick, glyph-coded so colour is never the only cue
+  const verdicts = [5,4,"pass",3,4,"dislike",2,4];
+  let cells = "";
+  for (let i = 0; i < 20; i++) {
+    const v = verdicts[i];
+    if (i === 7) cells += `<div class="cell cur r"><span>4${ICON.star}</span></div>`;
+    else if (v === "pass") cells += `<div class="cell">P</div>`;
+    else if (v === "dislike") cells += `<div class="cell d">${ICON.ban}</div>`;
+    else if (v) cells += `<div class="cell r"><span>${v}${ICON.star}</span></div>`;
+    else cells += `<div class="cell"></div>`;
+  }
+  $("strip").innerHTML = cells;
+
+  // table
+  $("rows").innerHTML = TRAITS.map(t => `<tr><td>${t.name}</td><td class="song">${t.fmt(t.song)}${t.unit?`<small>${t.unit}</small>`:""}</td><td class="base">${t.fmt(t.base)}</td></tr>`).join("");
+
+  // radar: song in accent, baseline as a foreground outline
+  (() => {
+    const svg = $("radar"), cx = 180, cy = 180, R = 128, n = TRAITS.length;
+    const ang = i => -Math.PI / 2 + i * 2 * Math.PI / n;
+    const pt = (i, v) => [cx + Math.cos(ang(i)) * R * v, cy + Math.sin(ang(i)) * R * v];
+    let g = "";
+    for (const k of [0.25, 0.5, 0.75, 1]) g += `<polygon points="${TRAITS.map((_, i) => pt(i, k).join(",")).join(" ")}" fill="none" stroke="var(--muted)" stroke-width="1"/>`;
+    TRAITS.forEach((_, i) => { const [x, y] = pt(i, 1); g += `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="var(--muted)" stroke-width="1"/>`; });
+    const short = { tempo: "Tempo", valence: "Valence", energy: "Energy", dance: "Danceability", acoustic: "Acousticness", instr: "Instrumentalness", loud: "Loudness" };
+    TRAITS.forEach((t, i) => {
+      const [x, y] = pt(i, 1.14); const a = Math.cos(ang(i));
+      const anchor = Math.abs(a) < 0.2 ? "middle" : a > 0 ? "start" : "end";
+      g += `<text x="${x}" y="${y + 4}" text-anchor="${anchor}" fill="var(--light-foreground)" font-size="11.5" font-family="Archivo" font-weight="500">${short[t.key]}</text>`;
+    });
+    const poly = key => TRAITS.map((t, i) => pt(i, Math.max(0.03, t.norm(t[key]))).join(",")).join(" ");
+    g += `<polygon points="${poly("base")}" fill="none" stroke="var(--foreground)" stroke-width="1.5" stroke-linejoin="round"/>`;
+    g += `<polygon points="${poly("song")}" fill="var(--accent)" fill-opacity="0.16" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>`;
+    TRAITS.forEach((t, i) => { const [x, y] = pt(i, Math.max(0.03, t.norm(t.song))); g += `<circle cx="${x}" cy="${y}" r="4" fill="var(--accent)" stroke="var(--background)" stroke-width="2"/>`; });
+    svg.innerHTML = g;
+  })();
+
+  // the deck: spectrum halo, record, label, tonearm
+  (() => {
+    const svg = $("deck"), cx = 410, cy = 392, rec = 268, lab = 104;
+    let g = `<defs>
+      <radialGradient id="vinyl" cx="50%" cy="50%" r="50%">
+        <stop offset="0" stop-color="#0a0a0a"/><stop offset="0.96" stop-color="#111"/><stop offset="1" stop-color="#1a1a1a"/>
+      </radialGradient>
+      <linearGradient id="sheen" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset="0.45" stop-color="#fff" stop-opacity="0.07"/>
+        <stop offset="0.5" stop-color="#fff" stop-opacity="0"/><stop offset="0.55" stop-color="#fff" stop-opacity="0.05"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+      </linearGradient>
+      <clipPath id="labelclip"><circle cx="${cx}" cy="${cy}" r="${lab}"/></clipPath>
+      <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="14"/></filter>
+    </defs>`;
+    // beat glow
+    g += `<circle cx="${cx}" cy="${cy}" r="${rec + 6}" fill="none" stroke="var(--accent)" stroke-opacity="0.55" stroke-width="10" filter="url(#glow)"/>`;
+    // spectrum halo: 144 radial bars, mirrored left/right
+    const n = 72, s = spectrum(n, 5), inner = rec + 18, maxLen = 74;
+    for (let side = 0; side < 2; side++) for (let i = 0; i < n; i++) {
+      const v = s[i]; const a0 = -Math.PI / 2 + (side ? -1 : 1) * (i + 0.5) * Math.PI / n;
+      const len = 4 + v * maxLen;
+      const x1 = cx + Math.cos(a0) * inner, y1 = cy + Math.sin(a0) * inner;
+      const x2 = cx + Math.cos(a0) * (inner + len), y2 = cy + Math.sin(a0) * (inner + len);
+      g += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="var(--foreground)" stroke-opacity="${0.18 + 0.55 * v}" stroke-width="3.2" stroke-linecap="round"/>`;
+      if (v > 0.55) { const x3 = cx + Math.cos(a0) * (inner + len + 7), y3 = cy + Math.sin(a0) * (inner + len + 7); g += `<circle cx="${x3}" cy="${y3}" r="1.8" fill="var(--accent)"/>`; }
+    }
+    // record + grooves
+    g += `<circle cx="${cx}" cy="${cy}" r="${rec}" fill="url(#vinyl)"/>`;
+    for (let r = lab + 14; r < rec - 6; r += 2.2) g += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#fff" stroke-opacity="${(Math.sin(r * 0.9) + 1.4) * 0.012}" stroke-width="0.7"/>`;
+    for (const r of [lab + 46, lab + 98, rec - 40]) g += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#000" stroke-opacity="0.8" stroke-width="2.4"/>`;
+    g += `<circle cx="${cx}" cy="${cy}" r="${rec}" fill="url(#sheen)"/>`;
+    // label = cover art
+    g += `<image href="covers/tr-glass-lantern.svg" x="${cx - lab}" y="${cy - lab}" width="${lab * 2}" height="${lab * 2}" clip-path="url(#labelclip)" preserveAspectRatio="xMidYMid slice"/>`;
+    g += `<circle cx="${cx}" cy="${cy}" r="${lab}" fill="none" stroke="#fff" stroke-opacity="0.12"/>`;
+    g += `<circle cx="${cx}" cy="${cy}" r="7" fill="#1a1a1a" stroke="#000" stroke-width="2"/>`;
+    // progress arc just outside the label
+    const p = TRACK.position / TRACK.duration, ar = lab + 8, a1 = -Math.PI / 2 + p * 2 * Math.PI;
+    g += `<circle cx="${cx}" cy="${cy}" r="${ar}" fill="none" stroke="#fff" stroke-opacity="0.08" stroke-width="3"/>`;
+    g += `<path d="M${cx} ${cy - ar} A${ar} ${ar} 0 ${p > 0.5 ? 1 : 0} 1 ${cx + Math.cos(a1) * ar} ${cy + Math.sin(a1) * ar}" fill="none" stroke="var(--foreground)" stroke-width="3" stroke-linecap="round"/>`;
+    // tonearm: a straight arm from a pivot at top right; the stylus sits on the groove matching progress
+    const px = 752, py = 118;
+    const rStylus = rec - 24 - p * (rec - lab - 56);
+    const ang = -0.42, sx = cx + Math.cos(ang) * rStylus, sy = cy + Math.sin(ang) * rStylus;
+    const dx = sx - px, dy = sy - py, L = Math.hypot(dx, dy), ux = dx / L, uy = dy / L;
+    const hx = sx - ux * 30, hy = sy - uy * 30;                  // where the headshell starts
+    const wx = px - ux * 64, wy = py - uy * 64;                  // counterweight behind the pivot
+    const deg = Math.atan2(uy, ux) * 180 / Math.PI;
+    g += `<circle cx="${px}" cy="${py}" r="36" fill="#141414" stroke="#000" stroke-width="2"/>`;
+    g += `<circle cx="${px}" cy="${py}" r="24" fill="#1f1f1f" stroke="#2c2c2c"/>`;
+    g += `<g transform="translate(5 9)" opacity="0.55"><line x1="${wx}" y1="${wy}" x2="${hx}" y2="${hy}" stroke="#000" stroke-width="9" stroke-linecap="round"/></g>`;
+    g += `<rect x="-17" y="-13" width="34" height="26" rx="5" fill="#2a2a2a" stroke="#000" transform="translate(${wx} ${wy}) rotate(${deg})"/>`;
+    g += `<line x1="${wx}" y1="${wy}" x2="${hx}" y2="${hy}" stroke="#a6a6a6" stroke-width="6" stroke-linecap="round"/>`;
+    g += `<line x1="${wx}" y1="${wy}" x2="${hx}" y2="${hy}" stroke="#e2e2e2" stroke-width="1.4" stroke-linecap="round" transform="translate(-1 -1.6)"/>`;
+    g += `<rect x="-6" y="-10" width="40" height="20" rx="4" fill="#262626" stroke="#000" transform="translate(${hx} ${hy}) rotate(${deg + 14})"/>`;
+    g += `<circle cx="${sx}" cy="${sy}" r="3.2" fill="var(--accent)"/>`;
+    g += `<circle cx="${px}" cy="${py}" r="7" fill="var(--accent)"/>`;
+    svg.innerHTML = g;
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>needle playlists: B, Crate</title>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="picker.css">
+<style>
+  .layout { position: relative; z-index: 1; display: grid; grid-template-columns: 1fr 340px; height: 940px; }
+  .stage { position: relative; overflow: hidden; }
+  .flow { position: absolute; inset: 0 0 auto 0; height: 560px; perspective: 1100px; perspective-origin: 50% 46%; }
+  .sleeve { position: absolute; border-radius: 6px; -webkit-box-reflect: below 3px linear-gradient(transparent 70%, rgb(0 0 0 / 0.20)); }
+  .sleeve img, .sleeve .cover-ph { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 6px;
+    outline: 1px solid rgb(255 255 255 / 0.1); outline-offset: -1px; }
+  .sleeve .check { position: absolute; top: 10px; right: 10px; }
+  .sleeve.side { box-shadow: 0 20px 40px rgb(0 0 0 / 0.6); }
+  .sleeve.side::after { content: ""; position: absolute; inset: 0; border-radius: 6px; background: rgb(0 0 0 / 0.38); }
+  .sleeve.side.sel::after { background: rgb(0 0 0 / 0.18); }
+  .sleeve.side.sel { box-shadow: 0 0 0 3px var(--accent), 0 20px 40px rgb(0 0 0 / 0.6); }
+  .sleeve.main { box-shadow: 0 30px 70px rgb(0 0 0 / 0.65), 0 0 0 3px var(--accent); z-index: 5; }
+  .sleeve.main .check { width: 34px; height: 34px; top: 14px; right: 14px; } .sleeve.main .check svg { width: 20px; height: 20px; }
+
+  .record { position: absolute; z-index: 4; border-radius: 50%;
+    background:
+      radial-gradient(circle, transparent 0 31%, rgb(0 0 0 / 0) 31%),
+      repeating-radial-gradient(circle, #141414 0 1.6px, #1d1d1d 1.6px 3.2px);
+    box-shadow: 0 24px 60px rgb(0 0 0 / 0.7), inset 0 0 0 1px rgb(255 255 255 / 0.05); }
+  .record::before { content: ""; position: absolute; inset: 0; border-radius: 50%;
+    background: conic-gradient(from 210deg, transparent 0 20deg, rgb(255 255 255 / 0.07) 40deg, transparent 70deg, transparent 200deg, rgb(255 255 255 / 0.05) 220deg, transparent 250deg); }
+  .record .label { position: absolute; inset: 33%; border-radius: 50%; overflow: hidden; box-shadow: 0 0 0 4px #0f0f0f; }
+  .record .label img { width: 100%; height: 100%; object-fit: cover; }
+  .record .hole { position: absolute; inset: calc(50% - 5px); border-radius: 50%; background: var(--background); box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.8); }
+  .record svg.prog { position: absolute; inset: -14px; width: calc(100% + 28px); height: calc(100% + 28px); }
+
+  .info { position: absolute; left: 0; right: 0; top: 548px; text-align: center; }
+  .info h1 { font-stretch: 125%; font-weight: 700; font-size: 40px; letter-spacing: -0.02em; color: var(--text-strong); line-height: 1.1; }
+  .info .meta { margin-top: 8px; font-size: 15px; color: var(--text); font-variant-numeric: tabular-nums; }
+  .info .meta b { color: var(--text-strong); font-weight: 600; }
+  .info .artists { margin-top: 4px; color: var(--text-secondary); font-size: 13.5px; }
+  .info .acts { margin-top: 20px; display: flex; justify-content: center; gap: 12px; }
+  .info .legend { justify-content: center; margin-top: 18px; }
+  .info .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; }
+
+  .strip { position: absolute; left: 28px; right: 28px; bottom: 26px; }
+  .strip .row { display: flex; gap: 6px; align-items: flex-end; height: 64px; }
+  .strip .t { position: relative; width: 32px; height: 32px; flex: none; border-radius: 5px; }
+  .strip .t img, .strip .t .cover-ph { width: 100%; height: 100%; border-radius: 5px; object-fit: cover; outline: 1px solid rgb(255 255 255 / 0.1); outline-offset: -1px; opacity: 0.55; }
+  .strip .t .cover-ph svg { width: 14px; height: 14px; }
+  .strip .t.sel img { opacity: 1; }
+  .strip .t.sel::after { content: ""; position: absolute; left: 50%; bottom: -10px; width: 6px; height: 6px; margin-left: -3px; border-radius: 50%; background: var(--accent); }
+  .strip .t.cur { width: 52px; height: 52px; } .strip .t.cur img { opacity: 1; outline: 2px solid var(--focus); outline-offset: 3px; }
+  .strip .cap { display: flex; justify-content: space-between; margin-top: 18px; }
+
+  .rail { position: relative; padding: 28px 28px 28px 8px; display: flex; flex-direction: column; }
+  .panel { flex: 1; display: flex; flex-direction: column; border-radius: 18px; padding: 22px; background: rgb(255 255 255 / 0.035); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.05); }
+  .panel h2 { font-size: 15px; font-weight: 600; color: var(--text-strong); display: flex; justify-content: space-between; }
+  .panel h2 span { color: var(--text-secondary); font-weight: 500; font-variant-numeric: tabular-nums; }
+  .pile { position: relative; height: 212px; margin: 10px auto 8px; width: 240px; perspective: 600px; }
+  .pile .disc { position: absolute; width: 200px; height: 200px; border-radius: 50%; left: 20px; transform: rotateX(66deg); transform-origin: 50% 50%;
+    background: repeating-radial-gradient(circle, #151515 0 1.4px, #1e1e1e 1.4px 2.8px); box-shadow: 0 0 0 1px rgb(255 255 255 / 0.06), 0 10px 0 #0b0b0b, 0 18px 30px rgb(0 0 0 / 0.7); }
+  .pile .disc i { position: absolute; inset: 34%; border-radius: 50%; overflow: hidden; } .pile .disc i img { width: 100%; height: 100%; object-fit: cover; }
+  .pile .spindle { position: absolute; left: 117px; top: 4px; width: 6px; height: 88px; border-radius: 3px; background: linear-gradient(to right, #777, #bbb, #666); z-index: 9; }
+  .items { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+  .item { display: grid; grid-template-columns: 40px 1fr auto; gap: 12px; align-items: center; padding: 6px; border-radius: 10px; }
+  .item img { width: 40px; height: 40px; border-radius: 6px; object-fit: cover; outline: 1px solid rgb(255 255 255 / 0.1); outline-offset: -1px; }
+  .item .nm { font-size: 13.5px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .item .sub { font-size: 12px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .item .x { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 8px; color: var(--text-secondary); }
+  .item .x svg { width: 14px; height: 14px; }
+  .item.cur { background: rgb(255 255 255 / 0.05); }
+  .totals { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--hairline); }
+  .totals .big { font-size: 28px; font-weight: 600; font-stretch: 112%; color: var(--text-strong); font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .totals .big small { font-size: 14px; font-weight: 500; color: var(--text-secondary); font-stretch: 100%; }
+  .totals .sub { margin-top: 4px; font-size: 12.5px; color: var(--text-secondary); line-height: 1.45; }
+  .totals .switches { display: flex; flex-direction: column; gap: 12px; margin: 18px 0; }
+  .totals .btn.primary { width: 100%; justify-content: center; height: 48px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="backdrop" id="glow"></div>
+  <div class="backdrop-veil"></div>
+  <header class="topbar" id="top"></header>
+  <div class="layout">
+    <section class="stage" id="stage"></section>
+    <aside class="rail"><div class="panel" id="panel"></div></aside>
+  </div>
+</div>
+<script src="data.js"></script>
+<script src="playlists.js"></script>
+<script src="picker.js"></script>
+<script>
+  document.getElementById("top").innerHTML = topbar();
+  const SEL = ["Deep End Bass", "Wobble Archive", "MIDNIGHT PHONK"];
+  const ci = PLAYLISTS.findIndex(p => p.name === "Wobble Archive");
+  const cur = PLAYLISTS[ci];
+  document.getElementById("glow").style.backgroundImage = `url(${cur.cover})`;
+  const stage = document.getElementById("stage");
+
+  // cover flow: the current sleeve, its record slid out, three neighbours each side
+  let html = "", flowHtml = "";
+  const S = 340, y0 = 96, cx = 380;
+  for (const d of [-3, -2, -1, 1, 2, 3]) {
+    const p = PLAYLISTS[ci + d]; if (!p) continue;
+    const size = 300, sel = SEL.includes(p.name), a = Math.abs(d);
+    const x = d < 0 ? cx - 150 - a * 78 - size / 2 : cx + S + 120 + (a - 1) * 78;
+    const rot = d < 0 ? 62 : -62;
+    flowHtml += `<div class="sleeve side ${sel ? "sel" : ""}" style="left:${x}px;top:${y0 + (S - size) / 2}px;width:${size}px;height:${size}px;transform:translateZ(-160px) rotateY(${rot}deg);z-index:${4 - a}">${coverImg(p)}${sel ? `<span class="check">${ICON.check}</span>` : ""}</div>`;
+  }
+  const R = 160, C = 2 * Math.PI * (R + 7);
+  let off = 0, arcs = "";
+  for (const [k, col] of segments(cur)) {
+    if (!k) continue; const len = k / cur.songs * C;
+    arcs += `<circle cx="${R + 14}" cy="${R + 14}" r="${R + 7}" fill="none" stroke="${col}" stroke-width="5" stroke-dasharray="${len - 1.5} ${C}" stroke-dashoffset="${-off}" transform="rotate(-90 ${R + 14} ${R + 14})"/>`;
+    off += len;
+  }
+  flowHtml += `<div class="record" style="left:${cx + S - 180}px;top:${y0 + 10}px;width:${2 * R}px;height:${2 * R}px">
+      <svg class="prog" viewBox="0 0 ${2 * R + 28} ${2 * R + 28}"><circle cx="${R + 14}" cy="${R + 14}" r="${R + 7}" fill="none" stroke="rgb(255 255 255 / 0.08)" stroke-width="5"/>${arcs}</svg>
+      <div class="label">${coverImg(cur)}</div><div class="hole"></div></div>`;
+  flowHtml += `<div class="sleeve main" style="left:${cx}px;top:${y0}px;width:${S}px;height:${S}px">${coverImg(cur)}<span class="check">${ICON.check}</span></div>`;
+  html += `<div class="flow">${flowHtml}</div>`;
+
+  const avg = (cur.stars.reduce((a, s, i) => a + s * (i + 1), 0) / cur.rated).toFixed(1);
+  html += `<div class="info">
+      <h1>${cur.name}</h1>
+      <div class="meta"><b>${n(cur.left)}</b> of ${n(cur.songs)} songs to review · ${n(cur.reviewed)} reviewed, rated ${avg}★ on average</div>
+      <div class="artists">Mostly ${cur.artists.join(", ")}</div>
+      <div class="legend">
+        <span><i style="background:${VCOL[5]}"></i>Rated, brighter is more stars</span>
+        <span><i style="background:${VCOL.pass}"></i>Pass</span>
+        <span><i style="background:${VCOL.dislike}"></i>Dislike</span>
+        <span><i style="background:rgb(255 255 255 / 0.14)"></i>To review</span>
+      </div>
+      <div class="acts">
+        <button class="btn">${ICON.check}In your stack <span class="kbd">Space</span></button>
+        <button class="btn">Review only this one <span class="kbd">Shift</span><span class="kbd" style="margin-left:-6px">Enter</span></button>
+      </div>
+    </div>`;
+
+  // the whole crate, flipped through with the arrow keys
+  html += `<div class="strip"><div class="row">${PLAYLISTS.map((p, i) =>
+      `<div class="t ${SEL.includes(p.name) ? "sel" : ""} ${i === ci ? "cur" : ""}">${coverImg(p)}</div>`).join("")}</div>
+      <div class="cap keys"><span><span class="kbd">←</span><span class="kbd">→</span> flip through ${PLAYLISTS.length} playlists</span><span><span class="kbd">/</span> jump to a name</span><span><span class="kbd">A</span> stack them all</span></div></div>`;
+  stage.innerHTML = html;
+
+  const sel = SEL.map(byName);
+  document.getElementById("panel").innerHTML = `
+    <h2>Your stack <span>${sel.length} playlists</span></h2>
+    <div class="pile"><div class="spindle"></div>${sel.map((p, i) => `<div class="disc" style="top:${50 - i * 30}px;z-index:${i + 1}"><i>${coverImg(p)}</i></div>`).join("")}</div>
+    <div class="items">${sel.map(p => `<div class="item ${p === cur ? "cur" : ""}">${coverImg(p)}<div style="min-width:0"><div class="nm">${p.name}</div><div class="sub">${progressText(p)}</div></div><span class="x" aria-label="Remove ${p.name}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span></div>`).join("")}</div>
+    <div class="totals">
+      <div class="big">924 <small>songs to review</small></div>
+      <div class="sub">276 already have a verdict and are skipped. 3 songs are on more than one playlist and play once.</div>
+      <div class="switches"><span class="switch on"><i></i>Skip songs with a verdict</span><span class="switch on"><i></i>Shuffle</span></div>
+      <button class="btn primary">Start review <span class="kbd">Enter</span></button>
+    </div>`;
+</script>
+</body>
+</html>

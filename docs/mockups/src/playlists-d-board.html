@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>needle playlists: D, Progress board</title>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="picker.css">
+<style>
+  .head { position: relative; z-index: 1; padding: 18px 28px 0; display: flex; align-items: center; gap: 16px; }
+  .head h1 { font-stretch: 112%; font-weight: 700; font-size: 24px; letter-spacing: -0.02em; color: var(--text-strong); white-space: nowrap; margin-inline-end: 8px; }
+  .head .search { min-width: 360px; color: var(--text); }
+  .head .search .caret { width: 1.5px; height: 16px; background: var(--accent); margin-inline-start: -8px; }
+  .head .sortby { margin-inline-start: auto; display: flex; align-items: center; gap: 10px; color: var(--text-secondary); font-size: 13px; }
+
+  .cols { position: relative; z-index: 1; margin: 16px 28px 0; display: grid; grid-template-columns: 28px 52px minmax(0, 1fr) 420px 150px 64px; gap: 16px; align-items: center;
+    font-size: 12px; font-weight: 600; color: var(--text-secondary); padding: 0 12px 8px; border-bottom: 1px solid var(--hairline); }
+  .cols .mixkey { display: flex; gap: 7px; align-items: center; font-weight: 500; }
+  .cols .mixkey i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
+
+  .list { position: relative; z-index: 1; margin: 0 28px; height: 776px; overflow: hidden; }
+  .group { display: flex; align-items: baseline; gap: 8px; padding: 18px 12px 6px; font-size: 13px; font-weight: 600; color: var(--text); }
+  .group span { color: var(--text-secondary); font-weight: 500; font-variant-numeric: tabular-nums; }
+  .row { display: grid; grid-template-columns: 28px 52px minmax(0, 1fr) 420px 150px 64px; gap: 16px; align-items: center; height: 64px; padding: 0 12px; border-radius: 12px; }
+  .row + .row { box-shadow: 0 -1px 0 rgb(255 255 255 / 0.035); }
+  .row.sel { background: rgb(var(--accent-rgb) / 0.07); box-shadow: inset 0 0 0 1px rgb(var(--accent-rgb) / 0.22); }
+  .row.focus { outline: 2px solid var(--focus); outline-offset: -2px; }
+  .box { width: 20px; height: 20px; border-radius: 6px; box-shadow: inset 0 0 0 1.5px rgb(255 255 255 / 0.35); display: grid; place-items: center; }
+  .row.sel .box { background: var(--accent); box-shadow: none; color: var(--on-accent); }
+  .box svg { width: 14px; height: 14px; }
+  .row img, .row .cover-ph { width: 52px; height: 52px; border-radius: 8px; object-fit: cover; outline: 1px solid rgb(255 255 255 / 0.1); outline-offset: -1px; }
+  .row .cover-ph svg { width: 20px; height: 20px; }
+  .row .nm { display: flex; gap: 8px; align-items: center; min-width: 0; }
+  .row .nm b { font-size: 14.5px; font-weight: 600; color: var(--text-strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row .art { font-size: 12.5px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+  .prog .vbar { height: 10px; display: flex; gap: 2px; border-radius: 4px; overflow: hidden; }
+  .prog .vbar i { display: block; min-width: 2px; }
+  .prog .t { display: flex; justify-content: space-between; margin-top: 6px; font-size: 12.5px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .prog .t b { color: var(--text); font-weight: 600; }
+  .mix { display: flex; align-items: flex-end; gap: 4px; height: 36px; }
+  .mix i { width: 14px; border-radius: 3px 3px 1px 1px; min-height: 2px; display: block; }
+  .mix.empty { align-items: center; font-size: 12.5px; color: var(--dark-foreground); }
+  .avg { text-align: end; font-size: 16px; font-weight: 600; color: var(--text-strong); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .avg small { display: block; font-size: 11.5px; font-weight: 500; color: var(--text-secondary); }
+  .avg.none { color: var(--dark-foreground); font-weight: 500; font-size: 13px; }
+  .row.done { opacity: 0.6; }
+  .session { background: var(--dark-background); box-shadow: 0 -1px 0 rgb(255 255 255 / 0.05), 0 -18px 40px rgb(0 0 0 / 0.55); }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar" id="top"></header>
+  <div class="head">
+    <h1>Review playlists</h1>
+    <div class="search" id="search"></div>
+    <div class="seg" id="seg"></div>
+    <div class="sortby">Sort <div class="seg"><span class="on">Most to review</span><span>Best rated</span><span>Name</span></div></div>
+  </div>
+  <div class="cols">
+    <span></span><span></span><span>Playlist</span>
+    <span>Progress</span>
+    <span class="mixkey" style="white-space:nowrap;font-size:11.5px">5★ → 1★, Pass, Dislike</span>
+    <span style="text-align:end">Average</span>
+  </div>
+  <main class="list" id="list"></main>
+  <footer class="session" id="session"></footer>
+</div>
+<script src="data.js"></script>
+<script src="playlists.js"></script>
+<script src="picker.js"></script>
+<script>
+  document.getElementById("top").innerHTML = topbar();
+  document.getElementById("search").innerHTML = `${ICON.search}<span class="caret"></span><span style="color:var(--text-secondary)">Type to filter 31 playlists</span><span class="kbd">/</span>`;
+  const cnt = f => PLAYLISTS.filter(f).length;
+  document.getElementById("seg").innerHTML = `<span class="on">All <b>${PLAYLISTS.length}</b></span><span>Yours <b>${cnt(p => p.mine)}</b></span><span>Followed <b>${cnt(p => !p.mine)}</b></span>`;
+  const SEL = ["Deep End Bass", "Wobble Archive", "MIDNIGHT PHONK"];
+  const FOCUS = "Main Stage";
+
+  function row(p) {
+    const sel = SEL.includes(p.name), foc = p.name === FOCUS;
+    const mixVals = [p.stars[4], p.stars[3], p.stars[2], p.stars[1], p.stars[0], p.passed, p.disliked];
+    const cols = [VCOL[5], VCOL[4], VCOL[3], VCOL[2], VCOL[1], VCOL.pass, VCOL.dislike];
+    const max = Math.max(...mixVals);
+    const mix = max ? `<div class="mix" aria-label="${p.stars[4]} five-star, ${p.stars[3]} four-star, ${p.stars[2]} three-star, ${p.stars[1]} two-star, ${p.stars[0]} one-star, ${p.passed} passes, ${p.disliked} dislikes">${mixVals.map((v, i) => `<i style="height:${v ? Math.max(3, v / max * 36) : 2}px;background:${v ? cols[i] : "rgb(255 255 255 / 0.08)"}"></i>`).join("")}</div>`
+                    : `<div class="mix empty">No verdicts yet</div>`;
+    const avg = p.rated ? (p.stars.reduce((a, s, i) => a + s * (i + 1), 0) / p.rated).toFixed(1) : null;
+    const t = p.done ? `<span><b>All ${n(p.songs)}</b> reviewed</span><span></span>` : p.reviewed
+      ? `<span><b>${n(p.left)}</b> to review</span><span>${n(p.reviewed)} of ${n(p.songs)} done</span>`
+      : `<span><b>${n(p.songs)}</b> to review</span><span>not started</span>`;
+    return `<div class="row ${sel ? "sel" : ""} ${foc ? "focus" : ""} ${p.done ? "done" : ""}">
+      <span class="box">${sel ? ICON.check : ""}</span>
+      ${coverImg(p)}
+      <div style="min-width:0"><div class="nm"><b>${p.name}</b>${p.mine ? "" : `<span class="followed">Followed</span>`}</div>
+        ${p.artists.length ? `<div class="art">Mostly ${p.artists.join(", ")}</div>` : ""}</div>
+      <div class="prog">${bar(p, 10)}<div class="t">${t}</div></div>
+      ${mix}
+      <div class="avg ${avg ? "" : "none"}">${avg ? avg + "★<small>" + n(p.rated) + " rated</small>" : "–"}</div>
+    </div>`;
+  }
+  const inprog = PLAYLISTS.filter(p => p.reviewed && !p.done).sort((a, b) => b.left - a.left);
+  const fresh = PLAYLISTS.filter(p => !p.reviewed).sort((a, b) => b.songs - a.songs);
+  const done = PLAYLISTS.filter(p => p.done);
+  document.getElementById("list").innerHTML =
+    `<div class="group">In progress <span>${inprog.length}</span></div>${inprog.map(row).join("")}
+     <div class="group">Not started <span>${fresh.length}</span></div>${fresh.map(row).join("")}
+     <div class="group">All reviewed <span>${done.length}</span></div>${done.map(row).join("")}`;
+  document.getElementById("session").innerHTML = sessionDock(SEL.map(byName), { songs: 1200, overlap: 3, haveVerdict: 276 }).replace(
+    '<div class="opts">', '<div class="keys"><span><span class="kbd">↑</span><span class="kbd">↓</span> move</span><span><span class="kbd">Space</span> tick</span><span><span class="kbd">A</span> tick all shown</span></div><div class="opts">');
+</script>
+</body>
+</html>

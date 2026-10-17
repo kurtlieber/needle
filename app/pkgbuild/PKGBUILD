@@ -1,0 +1,55 @@
+# needle: a Spotify review app (the Qt app and its librespot playback engine), one package.
+#
+# Built from a source tarball of the repository that bin/source-tarball writes next to this file (CI and bin/install
+# both use it). For the AUR, point source= at the v$pkgver tag's archive and pin its checksum.
+pkgname=needle
+# x-release-please-start-version
+pkgver=0.3.0
+# x-release-please-end
+pkgrel=1
+pkgdesc='Review Spotify discoveries and likes: play them, see their Readings against your Baseline, give Verdicts'
+arch=('x86_64')
+url='https://github.com/kurtlieber/needle'
+license=('MIT' 'OFL-1.1')
+depends=('qt6-base' 'qt6-declarative' 'qt6-wayland' 'libpulse' 'openssl' 'dbus' 'xdg-utils')
+makedepends=('cargo')
+options=('!debug')
+source=("$pkgname-$pkgver.tar.gz")
+sha256sums=('SKIP')
+
+prepare() {
+  cd "$pkgname-$pkgver/engine"
+  export RUSTUP_TOOLCHAIN=stable
+  cargo fetch --locked --target "$(rustc -vV | sed -n 's/host: //p')"
+}
+
+build() {
+  cd "$pkgname-$pkgver"
+  export RUSTUP_TOOLCHAIN=stable CARGO_TARGET_DIR=target
+  (cd engine && cargo build --frozen --release)
+
+  mkdir -p app/build && cd app/build
+  qmake6 ../needle.pro \
+    QMAKE_CFLAGS_RELEASE="$CFLAGS" QMAKE_CXXFLAGS_RELEASE="$CXXFLAGS" QMAKE_LFLAGS_RELEASE="$LDFLAGS"
+  make
+}
+
+check() {
+  cd "$pkgname-$pkgver"
+  mkdir -p app/build/tests && (cd app/build/tests && qmake6 ../../tests/needle_tests.pro && make &&
+    QT_QPA_PLATFORM=offscreen ./needle_tests)
+
+  export RUSTUP_TOOLCHAIN=stable CARGO_TARGET_DIR=target
+  (cd engine && cargo test --frozen)
+}
+
+package() {
+  cd "$pkgname-$pkgver"
+  install -Dm755 app/build/needle "$pkgdir/usr/bin/needle"
+  install -Dm755 engine/target/release/needle-engine "$pkgdir/usr/lib/needle/needle-engine"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  install -Dm644 NOTICE "$pkgdir/usr/share/licenses/$pkgname/NOTICE"
+  install -Dm644 app/src/fonts/OFL.txt "$pkgdir/usr/share/licenses/$pkgname/OFL-Archivo.txt"
+  install -Dm644 app/pkgbuild/needle.svg "$pkgdir/usr/share/icons/hicolor/scalable/apps/needle.svg"
+  install -Dm644 app/pkgbuild/needle.desktop "$pkgdir/usr/share/applications/needle.desktop"
+}

@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>needle playlists: C, Sound map</title>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="picker.css">
+<style>
+  .layout { position: relative; z-index: 1; display: grid; grid-template-columns: 1fr 340px; height: 940px; }
+  .left { position: relative; padding: 16px 0 0 28px; }
+  .bar { display: flex; align-items: center; gap: 16px; }
+  .bar h1 { font-stretch: 112%; font-weight: 700; font-size: 24px; letter-spacing: -0.02em; color: var(--text-strong); white-space: nowrap; }
+  .bar .keys { margin-inline-start: auto; }
+
+  .map { position: relative; margin-top: 16px; width: 1132px; height: 716px; border-radius: 18px;
+    background: radial-gradient(70% 70% at 50% 40%, rgb(255 255 255 / 0.025), transparent), rgb(0 0 0 / 0.22);
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.05); overflow: hidden; }
+  .map svg.axes { position: absolute; inset: 0; }
+  .quad { position: absolute; font-size: 12.5px; font-weight: 500; color: var(--text-secondary); letter-spacing: 0.01em; }
+  .pole { position: absolute; font-size: 12px; color: var(--text-secondary); }
+  .axis-name { position: absolute; font-size: 12px; font-weight: 600; color: var(--text); }
+
+  .usual { position: absolute; z-index: 1; border-radius: 10px; background: rgb(255 255 255 / 0.035); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.10); }
+  .usual span { position: absolute; z-index: 35; left: 0; top: -26px; padding: 2px 8px; border-radius: 6px; background: rgb(18 18 18 / 0.85); font-size: 11.5px; color: var(--text-secondary); white-space: nowrap; }
+  .you { position: absolute; width: 18px; height: 18px; margin: -9px 0 0 -9px; border-radius: 50%; border: 2px solid var(--foreground); background: var(--background); z-index: 30; }
+
+  .b { position: absolute; border-radius: 50%; transform: translate(-50%, -50%); }
+  .b img, .b .cover-ph { position: absolute; inset: 5px; width: calc(100% - 10px); height: calc(100% - 10px); border-radius: 50%; object-fit: cover; outline: 1px solid rgb(255 255 255 / 0.1); outline-offset: -1px; }
+  .b .cover-ph svg { width: 40%; height: 40%; }
+  .b > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .b.sel { box-shadow: 0 0 0 3px var(--accent), 0 0 26px rgb(var(--accent-rgb) / 0.45); }
+  .b .check { position: absolute; right: -4px; top: -4px; width: 22px; height: 22px; } .b .check svg { width: 13px; height: 13px; }
+  .b.focus { outline: 2px solid var(--focus); outline-offset: 5px; }
+  .b.done img { filter: saturate(0.3) brightness(0.6); }
+  .b .lbl { position: absolute; left: 50%; top: calc(100% + 5px); transform: translateX(-50%); font-size: 11.5px; font-weight: 600; color: var(--text); white-space: nowrap;
+    text-shadow: 0 1px 3px rgb(0 0 0 / 0.9); max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
+
+  .lasso { position: absolute; inset: 0; pointer-events: none; z-index: 40; }
+  .lasso-tip { position: absolute; z-index: 41; padding: 6px 10px; border-radius: 8px; background: var(--accent); color: var(--on-accent); font-size: 12.5px; font-weight: 600; white-space: nowrap;
+    box-shadow: 0 8px 20px rgb(0 0 0 / 0.5); }
+
+  .tray { display: flex; align-items: center; gap: 12px; margin-top: 14px; color: var(--text-secondary); font-size: 12.5px; }
+  .tray img, .tray .cover-ph { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; outline: 1px solid rgb(255 255 255 / 0.1); outline-offset: -1px; }
+  .tray .cover-ph svg { width: 14px; height: 14px; }
+
+  .rail { padding: 16px 28px 28px 8px; display: flex; flex-direction: column; gap: 16px; }
+  .card { border-radius: 18px; padding: 18px; background: rgb(255 255 255 / 0.035); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.05); }
+  .card h2 { font-size: 12px; font-weight: 600; color: var(--text-secondary); letter-spacing: 0.04em; text-transform: uppercase; }
+  .focuscard .top { display: grid; grid-template-columns: 64px 1fr; gap: 14px; align-items: center; margin-top: 12px; }
+  .focuscard img { width: 64px; height: 64px; border-radius: 10px; object-fit: cover; outline: 1px solid rgb(255 255 255 / 0.1); outline-offset: -1px; }
+  .focuscard .nm { font-size: 17px; font-weight: 700; color: var(--text-strong); line-height: 1.2; }
+  .focuscard .sub { font-size: 12.5px; color: var(--text-secondary); font-variant-numeric: tabular-nums; margin-top: 2px; }
+  .focuscard .sum { margin-top: 14px; font-size: 14px; line-height: 1.5; color: var(--text); text-wrap: pretty; }
+  .focuscard .sum em { font-style: normal; font-weight: 600; color: var(--text-strong); }
+  .focuscard .vbar { margin-top: 14px; height: 8px; display: flex; gap: 2px; border-radius: 3px; overflow: hidden; }
+  .focuscard .vbar i { display: block; min-width: 2px; }
+  .focuscard .row { display: flex; justify-content: space-between; margin-top: 8px; font-size: 12.5px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .focuscard .artists { margin-top: 10px; font-size: 12.5px; color: var(--text-secondary); }
+  .focuscard .keyline { margin-top: 14px; padding-top: 12px; border-top: 1px solid rgb(255 255 255 / 0.06); display: flex; gap: 8px; align-items: center; font-size: 12.5px; color: var(--text-secondary); }
+
+  .selcard { flex: 1; display: flex; flex-direction: column; }
+  .item { display: grid; grid-template-columns: 36px 1fr auto; gap: 12px; align-items: center; padding: 5px 0; }
+  .item img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; outline: 1px solid rgb(255 255 255 / 0.1); outline-offset: -1px; }
+  .item .nm { font-size: 13.5px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .item .sub { font-size: 12px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .item .x { color: var(--text-secondary); width: 28px; height: 28px; display: grid; place-items: center; } .item .x svg { width: 14px; height: 14px; }
+  .items { margin-top: 10px; }
+  .totals { margin-top: auto; padding-top: 14px; border-top: 1px solid var(--hairline); }
+  .totals .big { font-size: 26px; font-weight: 600; font-stretch: 112%; color: var(--text-strong); font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .totals .big small { font-size: 14px; font-weight: 500; color: var(--text-secondary); font-stretch: 100%; }
+  .totals .sub { margin-top: 4px; font-size: 12.5px; color: var(--text-secondary); line-height: 1.45; }
+  .totals .switches { display: flex; flex-direction: column; gap: 12px; margin: 16px 0; }
+  .totals .btn.primary { width: 100%; justify-content: center; height: 48px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar" id="top"></header>
+  <div class="layout">
+    <section class="left">
+      <div class="bar">
+        <h1>Find playlists by sound</h1>
+        <div class="seg"><span class="on">Energy × Valence</span><span>Tempo × Danceability</span><span>Acoustic × Instrumental</span></div>
+        <div class="keys"><span>Drag to circle</span><span><span class="kbd">←</span><span class="kbd">↑</span><span class="kbd">→</span><span class="kbd">↓</span> move</span><span><span class="kbd">Space</span> add or remove</span></div>
+      </div>
+      <div class="map" id="map"></div>
+      <div class="tray" id="tray"></div>
+    </section>
+    <aside class="rail" id="rail"></aside>
+  </div>
+</div>
+<script src="data.js"></script>
+<script src="playlists.js"></script>
+<script src="picker.js"></script>
+<script>
+  document.getElementById("top").innerHTML = topbar();
+  const SEL = ["Deep End Bass", "Wobble Archive", "MIDNIGHT PHONK"];
+  const FOCUS = "Window-Shaking EDM";
+  const UNPLACED = ["Arias", "Pinned", "Quiet Hours"];
+  const W = 1132, H = 716, PAD = 56;
+  // axes zoomed to where the playlists are (energy 0.10–0.90, valence 0.15–0.90)
+  const E0 = 0.10, E1 = 0.90, V0 = 0.15, V1 = 0.90;
+  const X = e => PAD + (e - E0) / (E1 - E0) * (W - 2 * PAD), Y = v => H - PAD - (v - V0) / (V1 - V0) * (H - 2 * PAD);
+  const map = document.getElementById("map");
+
+  // axes, the usual range and the quadrant words from Concept A's summary sentence
+  let h = `<svg class="axes" viewBox="0 0 ${W} ${H}">
+    <line x1="0" y1="${Y(BASELINE.valence)}" x2="${W}" y2="${Y(BASELINE.valence)}" stroke="rgb(255 255 255 / 0.07)" stroke-dasharray="3 5"/>
+    <line x1="${X(BASELINE.energy)}" y1="0" x2="${X(BASELINE.energy)}" y2="${H}" stroke="rgb(255 255 255 / 0.07)" stroke-dasharray="3 5"/>
+  </svg>`;
+  h += `<div class="quad" style="right:28px;bottom:22px">Darker and more intense</div>
+        <div class="quad" style="right:28px;top:20px">Happier and more intense</div>
+        <div class="quad" style="left:28px;top:20px">Happier and calmer</div>
+        <div class="quad" style="left:28px;bottom:22px">Darker and calmer</div>
+        <div class="pole" style="left:${X(E0)}px;top:${Y(BASELINE.valence) + 8}px">calm</div>
+        <div class="pole" style="right:${W - X(E1)}px;top:${Y(BASELINE.valence) + 8}px">intense</div>
+        <div class="axis-name" style="left:${X(E1) - 70}px;top:${Y(BASELINE.valence) - 22}px">Energy →</div>
+        <div class="pole" style="left:${X(BASELINE.energy) + 10}px;top:${Y(V1) - 34}px">happy</div>
+        <div class="pole" style="left:${X(BASELINE.energy) + 10}px;top:${Y(V0) + 14}px">sad</div>
+        <div class="axis-name" style="left:${X(BASELINE.energy) + 10}px;top:${Y(V1) - 16}px">↑ Valence</div>`;
+  const ux = X(BASELINE.energyLo), uy = Y(BASELINE.valenceHi), uw = X(BASELINE.energyHi) - ux, uh = Y(BASELINE.valenceLo) - uy;
+  h += `<div class="usual" style="left:${ux}px;top:${uy}px;width:${uw}px;height:${uh}px"><span>Your usual range</span></div>`;
+  h += `<div class="you" style="left:${X(BASELINE.energy)}px;top:${Y(BASELINE.valence)}px" title="Your baseline"></div>`;
+
+  // bubbles: size by songs, ring = reviewed share; nudged apart so none hide another
+  const placed = PLAYLISTS.filter(p => !UNPLACED.includes(p.name)).map(p => ({ p, x: X(p.energy), y: Y(p.valence), tx: X(p.energy), ty: Y(p.valence), r: (38 + Math.sqrt(p.songs) * 1.7) / 2 }));
+  for (let it = 0; it < 400; it++) {
+    for (let i = 0; i < placed.length; i++) for (let j = i + 1; j < placed.length; j++) {
+      const a = placed[i], b = placed[j], dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 0.01, min = a.r + b.r + 18;
+      if (d < min) { const k = (min - d) / d / 2; a.x -= dx * k; a.y -= dy * k; b.x += dx * k; b.y += dy * k; }
+    }
+    for (const q of placed) { q.x += (q.tx - q.x) * 0.02; q.y += (q.ty - q.y) * 0.02; q.x = Math.min(W - q.r - 8, Math.max(q.r + 8, q.x)); q.y = Math.min(H - q.r - 26, Math.max(q.r + 8, q.y)); }
+  }
+  for (const q of placed) {
+    const p = q.p, sel = SEL.includes(p.name), foc = p.name === FOCUS, size = q.r * 2;
+    const far = Math.hypot(p.energy - BASELINE.energy, p.valence - BASELINE.valence) > 0.3;
+    const label = sel || foc || p.songs >= 300 || far;
+    h += `<div class="b ${sel ? "sel" : ""} ${foc ? "focus" : ""} ${p.done ? "done" : ""}" style="left:${q.x}px;top:${q.y}px;width:${size}px;height:${size}px;z-index:${sel || foc ? 20 : 10}">
+      ${ring(p, size, 3.5)}${coverImg(p)}${sel ? `<span class="check">${ICON.check}</span>` : ""}${label ? `<span class="lbl">${p.name}</span>` : ""}</div>`;
+  }
+
+  // a lasso being drawn around the darker, more intense corner
+  const L = ["Night Drift", "Cinematic Bass", "Orchestral Grime", "SUBWOOFER TEST TRACKS", "MIDNIGHT PHONK"].map(nm => placed.find(q => q.p.name === nm));
+  let cloud = [];
+  for (const q of L) for (let k = 0; k < 24; k++) { const t = k / 24 * 2 * Math.PI; cloud.push([q.x + Math.cos(t) * (q.r + 22), q.y + Math.sin(t) * (q.r + 22)]); }
+  cloud.sort((p, q) => p[0] - q[0] || p[1] - q[1]);
+  const cr = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const lo = [], hi = [];
+  for (const p of cloud) { while (lo.length >= 2 && cr(lo.at(-2), lo.at(-1), p) <= 0) lo.pop(); lo.push(p); }
+  for (const p of cloud.slice().reverse()) { while (hi.length >= 2 && cr(hi.at(-2), hi.at(-1), p) <= 0) hi.pop(); hi.push(p); }
+  let hull = lo.slice(0, -1).concat(hi.slice(0, -1));
+  // resample evenly, wobble a little like a hand-drawn loop, then smooth
+  const per = []; let total = 0;
+  for (let i = 0; i < hull.length; i++) { const p = hull[i], q = hull[(i + 1) % hull.length]; per.push(Math.hypot(q[0] - p[0], q[1] - p[1])); total += per.at(-1); }
+  const pts = []; const N = 36;
+  for (let k = 0; k < N; k++) {
+    let dist = k / N * total, i = 0; while (dist > per[i]) { dist -= per[i]; i++; }
+    const p = hull[i], q = hull[(i + 1) % hull.length], t = dist / per[i];
+    pts.push([p[0] + (q[0] - p[0]) * t + Math.sin(k * 2.1) * 3, p[1] + (q[1] - p[1]) * t + Math.cos(k * 1.3) * 3]);
+  }
+  const open = pts.slice(0, N - 3);
+  let path = `M${open[0][0]} ${open[0][1]}`;
+  for (let i = 0; i < open.length - 1; i++) {
+    const p0 = open[Math.max(i - 1, 0)], p1 = open[i], p2 = open[i + 1], p3 = open[Math.min(i + 2, open.length - 1)];
+    path += ` C${p1[0] + (p2[0] - p0[0]) / 6} ${p1[1] + (p2[1] - p0[1]) / 6} ${p2[0] - (p3[0] - p1[0]) / 6} ${p2[1] - (p3[1] - p1[1]) / 6} ${p2[0]} ${p2[1]}`;
+  }
+  const end = open.at(-1);
+  h += `<svg class="lasso" viewBox="0 0 ${W} ${H}"><path d="${path} Z" fill="rgb(var(--accent-rgb) / 0.07)" stroke="none"/><path d="${path}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-dasharray="7 6" stroke-linecap="round"/>
+        <circle cx="${end[0]}" cy="${end[1]}" r="5" fill="var(--accent)"/></svg>`;
+  const inside = (x, y) => { let c = false; for (let i = 0, j = open.length - 1; i < open.length; j = i++) { const [xi, yi] = open[i], [xj, yj] = open[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c; } return c; };
+  const caught = placed.filter(q => inside(q.x, q.y) && !SEL.includes(q.p.name)).length;
+  h += `<div class="lasso-tip" style="right:${W - end[0] + 6}px;top:${end[1] + 14}px">Release to add ${caught} playlists</div>`;
+  map.innerHTML = h;
+
+  document.getElementById("tray").innerHTML = `${UNPLACED.map(nm => coverImg(byName(nm))).join("")}<span>Not on the map yet: Arias, Pinned and Quiet Hours have fewer than 3 measured songs.</span>`;
+
+  const f = byName(FOCUS), sel = SEL.map(byName);
+  document.getElementById("rail").innerHTML = `
+    <div class="card focuscard">
+      <h2>Focused</h2>
+      <div class="top">${coverImg(f)}<div><div class="nm">${f.name}</div><div class="sub">${n(f.songs)} songs · ${n(f.left)} to review</div></div></div>
+      <p class="sum"><em>More intense and darker</em> than what you usually like.</p>
+      ${bar(f, 8)}
+      <div class="row"><span>${f.reviewed} reviewed, ${f.rated} rated</span><span>${f.left} to review</span></div>
+      <div class="artists">Mostly ${f.artists.join(", ")}</div>
+      <div class="keyline"><span class="kbd">Space</span> add to this review</div>
+    </div>
+    <div class="card selcard">
+      <h2>In this review</h2>
+      <div class="items">${sel.map(p => `<div class="item">${coverImg(p)}<div style="min-width:0"><div class="nm">${p.name}</div><div class="sub">${progressText(p)}</div></div><span class="x" aria-label="Remove ${p.name}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span></div>`).join("")}</div>
+      <div class="totals">
+        <div class="big">924 <small>songs to review</small></div>
+        <div class="sub">276 already have a verdict and are skipped. 3 are on more than one playlist and play once.</div>
+        <div class="switches"><span class="switch on"><i></i>Skip songs with a verdict</span><span class="switch on"><i></i>Shuffle</span></div>
+        <button class="btn primary">Start review <span class="kbd">Enter</span></button>
+      </div>
+    </div>`;
+</script>
+</body>
+</html>

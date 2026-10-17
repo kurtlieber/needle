@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>needle: compact layouts</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  body { background: var(--darker-background); }
+  .row { display: flex; gap: 44px; justify-content: center; padding-top: 22px; }
+  .cap { color: var(--text-secondary); font-size: 13px; margin-bottom: 10px; }
+  .cap b { color: var(--text); font-weight: 600; }
+  .win { position: relative; width: 470px; height: 916px; border-radius: 12px; overflow: hidden; background: var(--background);
+    box-shadow: 0 0 0 2px var(--accent), 0 20px 50px rgb(0 0 0 / 0.6); }
+  .win .backdrop { inset: -80px; opacity: .32; filter: blur(70px) saturate(1.15); }
+  .in { position: relative; z-index: 1; height: 100%; padding: 18px 20px; display: flex; flex-direction: column; }
+  .bar { display: flex; align-items: center; justify-content: space-between; font-size: 12.5px; color: var(--text-secondary); }
+  .bar .wordmark { font-size: 15px; }
+  .bar .wordmark svg { width: 15px; height: 15px; }
+  .hdr { display: grid; grid-template-columns: 76px 1fr; gap: 14px; align-items: center; margin-top: 16px; }
+  .hdr img { width: 76px; height: 76px; border-radius: 10px; object-fit: cover; outline: 1px solid rgb(255 255 255 / .1); outline-offset: -1px; }
+  .hdr .title { font-size: 24px; }
+  .hdr .artist { font-size: 14.5px; margin-top: 4px; }
+  .hdr .meta { font-size: 12.5px; }
+  .sum { margin-top: 14px; font-size: 13.5px; line-height: 1.45; color: var(--text); }
+  .sum em { font-style: normal; font-weight: 600; color: var(--text-strong); }
+  .grow { flex: 1; }
+  .vrow { display: flex; gap: 8px; align-items: center; margin-top: 12px; }
+  .vrow .vbtn { height: 44px; padding-inline: 12px 10px; gap: 8px; font-size: 13px; }
+  .vrow .stars { flex: 1; justify-content: space-between; }
+  .vrow .star { width: 38px; height: 36px; }
+  .vrow .star svg { width: 20px; height: 20px; }
+  .tp { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
+  .tp .tbtn { width: 34px; height: 34px; } .tp .tbtn svg { width: 17px; height: 17px; }
+  .tp .tbtn.play { width: 40px; height: 40px; } .tp .tbtn.play svg { width: 18px; height: 18px; }
+  .tp .pg { flex: 1; height: 4px; border-radius: 2px; background: rgb(255 255 255 / .08); position: relative; }
+  .tp .pg b { position: absolute; inset: 0 auto 0 0; width: 40.2%; border-radius: 2px; background: var(--foreground); }
+
+  /* A */
+  .a-bpm { display: flex; align-items: center; gap: 14px; margin-top: 18px; }
+  .a-bpm .dot { width: 14px; height: 14px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 6px rgb(var(--accent-rgb) / .15), 0 0 0 13px rgb(var(--accent-rgb) / .06), 0 0 22px rgb(var(--accent-rgb) / .8); margin-inline: 12px 6px; }
+  .a-bpm .n { font-stretch: 125%; font-weight: 300; font-size: 52px; line-height: .9; color: var(--text-strong); letter-spacing: -.03em; }
+  .a-bpm .u { font-stretch: 125%; font-weight: 600; font-size: 12px; color: var(--text-secondary); }
+  .a-bpm .y { font-size: 12.5px; color: var(--text-secondary); margin-top: 4px; }
+  .a-bpm .y b { color: var(--text); }
+  .mini { margin-top: 14px; display: flex; flex-direction: column; gap: 4px; }
+  .mrow { display: grid; grid-template-columns: 1fr auto; row-gap: 4px; height: 60px; align-content: center; }
+  .mrow .nm { font-size: 12.5px; font-weight: 600; color: var(--text); }
+  .mrow .vl { white-space: nowrap; font-size: 12.5px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .mrow .vl b { color: var(--text-strong); font-weight: 650; font-size: 14px; margin-right: 6px; }
+  .mrow svg { grid-column: 1 / -1; overflow: visible; }
+
+  /* B */
+  .b-deck { display: grid; place-items: center; margin-top: 4px; }
+  .b-list { margin-top: 6px; display: flex; flex-direction: column; }
+  .b-item { display: grid; grid-template-columns: 112px 1fr 92px; gap: 12px; align-items: center; height: 31px; font-size: 12.5px; }
+  .b-item .nm { color: var(--text); font-weight: 500; }
+  .b-item .vl { text-align: end; color: var(--text-secondary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .b-item .vl b { color: var(--text-strong); font-weight: 650; margin-right: 6px; }
+  .b-item svg { overflow: visible; }
+
+  /* C */
+  .c-map { position: relative; margin-top: 14px; }
+  .c-map canvas { display: block; border-radius: 8px; }
+  .c-map .ph { position: absolute; top: -3px; height: 62px; width: 2px; background: var(--bright-foreground); }
+  .c-strips { margin-top: 14px; display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; padding: 12px 6px 10px; border-radius: 14px; background: rgb(0 0 0 / .28); box-shadow: inset 0 0 0 1px rgb(255 255 255 / .05); }
+  .cs { display: flex; flex-direction: column; align-items: center; }
+  .cs .v { font-size: 14px; font-weight: 650; color: var(--text-strong); font-variant-numeric: tabular-nums; }
+  .cs .y { font-size: 11px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .cs .f { height: 14px; margin-top: 2px; font-size: 13px; line-height: 1; color: var(--accent); font-weight: 700; }
+  .cs svg { margin-top: 4px; overflow: visible; }
+  .cs .n { margin-top: 6px; font-size: 11px; color: var(--text); font-weight: 600; }
+  .c-keys { margin-top: 12px; display: grid; grid-template-columns: repeat(5, 1fr) 1.25fr 1.4fr; gap: 6px; }
+  .c-keys .k { height: 56px; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    background: linear-gradient(to bottom, rgb(255 255 255 / .07), rgb(255 255 255 / .03)); box-shadow: inset 0 1px 0 rgb(255 255 255 / .08), inset 0 -2px 0 rgb(0 0 0 / .5);
+    color: var(--light-foreground); font-size: 11px; font-weight: 650; }
+  .c-keys .k span { color: var(--text-secondary); }
+  .c-keys .k svg { width: 17px; height: 17px; }
+  .c-keys .k.t { color: var(--text); font-size: 12px; }
+  .c-keys .k.t svg { color: var(--text); }
+  .c-keys .k.dis svg { color: var(--red); }
+</style>
+</head>
+<body>
+<div class="row">
+  <div><div class="cap"><b>A</b> Calibrated, compact</div><div class="win" id="A"></div></div>
+  <div><div class="cap"><b>B</b> Turntable, compact</div><div class="win" id="B"></div></div>
+  <div><div class="cap"><b>C</b> Console, compact</div><div class="win" id="C"></div></div>
+</div>
+<script src="data.js"></script>
+<script>
+  const topBar = `<div class="bar"><div class="wordmark">${ICON.needle}needle</div><span>Discoveries, 7 of 20</span></div>`;
+  const hdr = `<div class="hdr"><img src="covers/tr-glass-lantern.svg" alt=""><div><div class="title">Glass Lantern</div><div class="artist">Moth Signal</div><div class="meta">Single, 2018</div></div></div>`;
+  const verdicts = (lit = 0) => `<div class="vrow"><div class="vbtn dislike">${ICON.ban}<span class="kbd">X</span></div><div class="vbtn">${ICON.pass}<span class="kbd">P</span></div>
+    <div class="stars">${[1,2,3,4,5].map(i => `<div class="star ${i<=lit?'lit':''}">${i<=lit?ICON.star:ICON.starOutline}</div>`).join("")}</div></div>`;
+  const tp = `<div class="tp"><div class="tbtn">${ICON.prev}</div><div class="tbtn play">${ICON.pause}</div><div class="tbtn">${ICON.next}</div><div class="pg"><b></b></div><span class="time">1:12 / 2:59</span></div>`;
+  const bg = `<div class="backdrop" style="background-image:url(covers/tr-glass-lantern.svg)"></div><div class="backdrop-veil"></div>`;
+
+  // A: tempo hero + six calibrated mini scales
+  (() => {
+    const W = 430;
+    const rows = TRAITS.filter(t => t.key !== "tempo").map(t => {
+      const X = v => t.norm(v) * W, s = X(t.song), b = X(t.base);
+      let ticks = "";
+      for (let k = 0; k <= 20; k++) ticks += `<line x1="${W*k/20}" x2="${W*k/20}" y1="${k%5? 13:9}" y2="16" stroke="${k%5?'var(--dark-foreground)':'var(--light-foreground)'}" stroke-opacity="${k%5?.8:.6}"/>`;
+      return `<div class="mrow"><span class="nm">${t.name}</span><span class="vl"><b>${t.fmt(t.song)}</b>Yours ${t.fmt(t.base)}</span>
+        <svg width="${W}" height="20"><line x1="0" x2="${W}" y1="16" y2="16" stroke="var(--muted)"/>${ticks}
+        <line x1="${Math.min(s,b)}" x2="${Math.max(s,b)}" y1="16" y2="16" stroke="var(--accent)" stroke-opacity=".38" stroke-width="4"/>
+        <circle cx="${b}" cy="16" r="5" fill="var(--background)" stroke="var(--foreground)" stroke-width="2"/>
+        <rect x="${s-1}" y="2" width="2" height="20" fill="var(--accent)"/><path d="M${s-5} 0h10l-5 6z" fill="var(--accent)"/></svg></div>`;
+    }).join("");
+    document.getElementById("A").innerHTML = bg + `<div class="in">${topBar}${hdr}
+      <div class="a-bpm"><span class="dot"></span><div><div><span class="n">102</span> <span class="u">BPM</span></div><div class="y">Yours <b>126</b></div></div></div>
+      <p class="sum">${summarySentence()}</p>
+      <div class="mini">${rows}</div><div class="grow"></div>${verdicts()}${tp}</div>`;
+  })();
+
+  // B: small deck + seven tiny bars
+  (() => {
+    const R = 112, C = 150, lab = 44; let g = "";
+    g += `<defs><clipPath id="lc"><circle cx="${C}" cy="${C}" r="${lab}"/></clipPath><filter id="gl" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="8"/></filter></defs>`;
+    g += `<circle cx="${C}" cy="${C}" r="${R+3}" fill="none" stroke="var(--accent)" stroke-opacity=".5" stroke-width="6" filter="url(#gl)"/>`;
+    const n = 48, s = spectrum(n, 5);
+    for (let side = 0; side < 2; side++) for (let i = 0; i < n; i++) { const a = -Math.PI/2 + (side?-1:1)*(i+.5)*Math.PI/n, l = 3 + s[i]*30, r0 = R + 8;
+      g += `<line x1="${C+Math.cos(a)*r0}" y1="${C+Math.sin(a)*r0}" x2="${C+Math.cos(a)*(r0+l)}" y2="${C+Math.sin(a)*(r0+l)}" stroke="var(--foreground)" stroke-opacity="${.18+.55*s[i]}" stroke-width="2.4" stroke-linecap="round"/>`; }
+    g += `<circle cx="${C}" cy="${C}" r="${R}" fill="#0c0c0c"/>`;
+    for (let r = lab + 8; r < R - 3; r += 2) g += `<circle cx="${C}" cy="${C}" r="${r}" fill="none" stroke="#fff" stroke-opacity="${(Math.sin(r)+1.4)*.012}" stroke-width=".6"/>`;
+    g += `<image href="covers/tr-glass-lantern.svg" x="${C-lab}" y="${C-lab}" width="${lab*2}" height="${lab*2}" clip-path="url(#lc)" preserveAspectRatio="xMidYMid slice"/><circle cx="${C}" cy="${C}" r="3.5" fill="#1a1a1a"/>`;
+    const px = 268, py = 40, ang = -0.5, rs = R - 16 - 0.4 * (R - lab - 24), sx = C + Math.cos(ang)*rs, sy = C + Math.sin(ang)*rs;
+    g += `<circle cx="${px}" cy="${py}" r="14" fill="#161616" stroke="#000"/><line x1="${px}" y1="${py}" x2="${sx}" y2="${sy}" stroke="#a6a6a6" stroke-width="3.5" stroke-linecap="round"/><circle cx="${sx}" cy="${sy}" r="2.5" fill="var(--accent)"/><circle cx="${px}" cy="${py}" r="4" fill="var(--accent)"/>`;
+    const W = 200;
+    const list = TRAITS.map(t => { const s2 = t.norm(t.song)*W, b = t.norm(t.base)*W;
+      return `<div class="b-item"><span class="nm">${t.name}</span><svg width="${W}" height="12"><rect x="0" y="4" width="${W}" height="4" rx="2" fill="rgb(255 255 255 / .07)"/><rect x="0" y="4" width="${s2}" height="4" rx="2" fill="var(--accent)"/><rect x="${b-1}" y="0" width="2.5" height="12" rx="1" fill="var(--foreground)"/></svg><span class="vl"><b>${t.fmt(t.song)}</b>${t.fmt(t.base)}</span></div>`; }).join("");
+    document.getElementById("B").innerHTML = bg + `<div class="in">${topBar}
+      <div class="b-deck"><svg width="300" height="300">${g}</svg></div>
+      <div class="title" style="font-size:24px;margin-top:2px">Glass Lantern</div><div class="artist" style="font-size:14.5px;margin-top:4px">Moth Signal <span class="meta">Single, 2018</span></div>
+      <p class="sum">${summarySentence()}</p>
+      <div class="b-list"><div class="b-item" style="height:22px"><span></span><span></span><span class="vl" style="font-size:11.5px">This, yours</span></div>${list}</div>
+      <div class="legend" style="margin-top:8px"><span><svg width="16" height="6"><rect width="16" height="4" y="1" rx="2" fill="var(--accent)"/></svg>This track</span><span><svg width="4" height="12"><rect width="2.5" height="12" rx="1" fill="var(--foreground)"/></svg>Yours</span></div>
+      <div class="grow"></div>${verdicts(4)}${tp}</div>`;
+  })();
+
+  // C: mini song map + seven mini strips + keycaps
+  (() => {
+    const H = 250, W = 46, x0 = W / 2;
+    const strips = TRAITS.map(t => { const Y = v => H - t.norm(v) * H;
+      const short = { tempo: "Tempo", valence: "Valence", energy: "Energy", dance: "Dance", acoustic: "Acoustic", instr: "Instr.", loud: "Loud" }[t.key];
+      return `<div class="cs"><div class="v">${t.fmt(t.song)}</div><div class="y">${t.fmt(t.base)}</div><div class="f">${t.outside === "below" ? "↓" : t.outside === "above" ? "↑" : ""}</div>
+        <svg width="${W}" height="${H}"><rect x="${x0-1.5}" y="0" width="3" height="${H}" rx="1.5" fill="var(--darker-background)"/>
+        <rect x="${x0-11}" y="${Y(t.hi)}" width="22" height="${Y(t.lo)-Y(t.hi)}" rx="3" fill="var(--foreground)" fill-opacity=".09" stroke="var(--foreground)" stroke-opacity=".22"/>
+        <rect x="${x0-3}" y="${Y(t.song)}" width="6" height="${H-Y(t.song)}" rx="3" fill="var(--accent)"/>
+        <rect x="${x0-14}" y="${Y(t.base)-5}" width="28" height="10" rx="3" fill="#2b2b2b" stroke="#000"/><rect x="${x0-10}" y="${Y(t.base)-1}" width="20" height="2" fill="var(--foreground)"/></svg>
+        <div class="n">${short}</div></div>`; }).join("");
+    document.getElementById("C").innerHTML = bg + `<div class="in">${topBar}
+      <div class="c-map"><canvas id="cm" width="430" height="56"></canvas><div class="ph" style="left:${0.402*430}px"></div></div>
+      ${hdr}<p class="sum">${summarySentence()}</p>
+      <div class="c-strips">${strips}</div>
+      <div class="legend" style="margin-top:10px;gap:14px"><span>Bar: this track</span><span>Cap: your baseline</span><span>Box: your middle 50%</span></div>
+      <div class="grow"></div>
+      <div class="c-keys">${[1,2,3,4,5].map(i => `<div class="k">${ICON.starOutline}<span>${i}</span></div>`).join("")}<div class="k t">${ICON.pass}<span>P</span></div><div class="k t dis">${ICON.ban}<span>X</span></div></div>
+      ${tp}</div>`;
+    const c = document.getElementById("cm"), ctx = c.getContext("2d"), r = rng(3), dur = 179;
+    const sec = s => s < 14 ? .25 : s < 29 ? .25 + (s-14)/15*.5 : s < 60 ? 1 : s < 88 ? .42 : s < 103 ? .42 + (s-88)/15*.5 : s < 150 ? 1 : s < 165 ? .5 : .2;
+    ctx.fillStyle = "rgb(0 0 0 / .35)"; ctx.fillRect(0, 0, 430, 56);
+    for (let i = 0; i < 215; i++) { const s = i/215*dur, e = sec(s);
+      for (let j = 0; j < 24; j++) { const f = j/23; let v = Math.max(Math.exp(-((f-.05)**2)/.006)*(e>.9?1:.35), Math.exp(-((f-.36)**2)/.03)*.75*e, Math.exp(-((f-.7)**2)/.03)*.35*e) * (.65+.5*r());
+        if (v < .06) continue; ctx.fillStyle = `rgb(230 142 13 / ${(s <= 72 ? .95 : .28) * Math.min(1, v)})`; ctx.fillRect(i*2, 56-(j+1)*56/24, 2, 56/24); } }
+  })();
+</script>
+</body>
+</html>

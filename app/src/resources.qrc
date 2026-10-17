@@ -1,0 +1,38 @@
+<RCC>
+    <qresource prefix="/">
+        <file alias="Backdrop.qml">qml/Backdrop.qml</file>
+        <file alias="Chip.qml">qml/Chip.qml</file>
+        <file alias="CompactView.qml">qml/CompactView.qml</file>
+        <file alias="Cover.qml">qml/Cover.qml</file>
+        <file alias="HelpOverlay.qml">qml/HelpOverlay.qml</file>
+        <file alias="Icon.qml">qml/Icon.qml</file>
+        <file alias="IconButton.qml">qml/IconButton.qml</file>
+        <file alias="Kbd.qml">qml/Kbd.qml</file>
+        <file alias="Main.qml">qml/Main.qml</file>
+        <file alias="MiniTraitRow.qml">qml/MiniTraitRow.qml</file>
+        <file alias="NeedleMarker.qml">qml/NeedleMarker.qml</file>
+        <file alias="Notice.qml">qml/Notice.qml</file>
+        <file alias="PlaybackNotice.qml">qml/PlaybackNotice.qml</file>
+        <file alias="PlaylistChip.qml">qml/PlaylistChip.qml</file>
+        <file alias="PlaylistPicker.qml">qml/PlaylistPicker.qml</file>
+        <file alias="PlaylistTile.qml">qml/PlaylistTile.qml</file>
+        <file alias="PlaylistTip.qml">qml/PlaylistTip.qml</file>
+        <file alias="Progress.qml">qml/Progress.qml</file>
+        <file alias="Pulse.qml">qml/Pulse.qml</file>
+        <file alias="QueueTabs.qml">qml/QueueTabs.qml</file>
+        <file alias="ScaleTrack.qml">qml/ScaleTrack.qml</file>
+        <file alias="SearchField.qml">qml/SearchField.qml</file>
+        <file alias="Segmented.qml">qml/Segmented.qml</file>
+        <file alias="StarBar.qml">qml/StarBar.qml</file>
+        <file alias="StatusLine.qml">qml/StatusLine.qml</file>
+        <file alias="Toggle.qml">qml/Toggle.qml</file>
+        <file alias="TopBar.qml">qml/TopBar.qml</file>
+        <file alias="TraitRow.qml">qml/TraitRow.qml</file>
+        <file alias="VerdictBar.qml">qml/VerdictBar.qml</file>
+        <file alias="Transport.qml">qml/Transport.qml</file>
+        <file alias="VerdictButton.qml">qml/VerdictButton.qml</file>
+        <file alias="WideView.qml">qml/WideView.qml</file>
+        <file alias="Wordmark.qml">qml/Wordmark.qml</file>
+        <file alias="fonts/Archivo[wdth,wght].ttf">fonts/Archivo[wdth,wght].ttf</file>
+    </qresource>
+</RCC>

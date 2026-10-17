@@ -1,0 +1,9 @@
+#!/bin/sh
+# Build and install the needle package (needle + needle-engine, the launcher entry and icon) from this checkout.
+# Released packages: GitHub Releases or ghcr.io/kurtlieber/needle (README, "Install").
+set -eu
+
+ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
+"$ROOT/bin/source-tarball" >/dev/null
+cd "$ROOT/pkgbuild"
+exec makepkg -fsi "$@"

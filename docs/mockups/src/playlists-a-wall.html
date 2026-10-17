@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>needle playlists: A, Cover wall</title>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="picker.css">
+<style>
+  .head { position: relative; z-index: 1; padding: 18px 28px 0; display: flex; align-items: flex-end; gap: 24px; }
+  .head h1 { font-stretch: 112%; font-weight: 700; font-size: 30px; letter-spacing: -0.02em; color: var(--text-strong); line-height: 1.1; }
+  .head p { margin-top: 6px; color: var(--text-secondary); font-size: 13.5px; }
+  .head .tools { margin-inline-start: auto; display: flex; gap: 12px; align-items: center; }
+  .sort { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-secondary); white-space: nowrap; }
+  .sort b { color: var(--text); font-weight: 500; }
+
+  .grid { position: relative; z-index: 1; padding: 22px 28px 0; display: grid; grid-template-columns: repeat(8, 1fr); gap: 24px 20px; }
+  .tile { position: relative; min-width: 0; }
+  .tile .art { position: relative; aspect-ratio: 1; border-radius: 12px; }
+  .tile .art img, .tile .art .cover-ph { width: 100%; height: 100%; border-radius: 12px; object-fit: cover; display: block;
+    outline: 1px solid rgb(255 255 255 / 0.1); outline-offset: -1px; box-shadow: 0 14px 30px rgb(0 0 0 / 0.45); }
+  .tile .art .cover-ph svg { width: 48px; height: 48px; }
+  .tile .check { position: absolute; top: 10px; right: 10px; }
+  .tile.sel .art { box-shadow: 0 0 0 3px var(--accent), 0 0 34px rgb(var(--accent-rgb) / 0.35); }
+  .tile.done .art img { filter: saturate(0.35) brightness(0.55); }
+  .tile .badge { position: absolute; left: 10px; bottom: 10px; display: inline-flex; gap: 6px; align-items: center; height: 26px; padding-inline: 8px 10px;
+    border-radius: 13px; background: rgb(13 13 13 / 0.78); color: var(--text-strong); font-size: 12px; font-weight: 600; }
+  .tile .badge svg { width: 14px; height: 14px; color: var(--accent); }
+  .tile.focus .art { outline: 2px solid var(--focus); outline-offset: 4px; }
+  .tile .name { margin-top: 12px; font-size: 14px; font-weight: 600; color: var(--text-strong); line-height: 1.3;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .tile .meta { margin-top: 3px; display: flex; gap: 8px; align-items: center; font-size: 12.5px; color: var(--text-secondary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .tile .vbar { margin-top: 9px; }
+  .vbar { display: flex; gap: 2px; border-radius: 3px; overflow: hidden; }
+  .vbar i { display: block; min-width: 2px; }
+  .tile .tip { position: absolute; z-index: 5; left: 50%; top: calc(100% - 46px); transform: translateX(-50%); width: 300px; padding: 12px 14px; border-radius: 12px;
+    background: #222; box-shadow: 0 14px 40px rgb(0 0 0 / 0.6), inset 0 0 0 1px rgb(255 255 255 / 0.06); font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; }
+  .tile .tip b { color: var(--text); font-weight: 600; }
+  .tile .tip .row { display: flex; justify-content: space-between; gap: 10px; font-variant-numeric: tabular-nums; }
+  .tile .tip .vbar { margin: 8px 0 8px; height: 8px; }
+  .tile .tip .keyline { margin-top: 10px; padding-top: 10px; border-top: 1px solid rgb(255 255 255 / 0.06); display: grid; grid-template-columns: auto 1fr; gap: 6px 8px; align-items: center; white-space: nowrap; }
+
+  .fade { position: absolute; z-index: 2; inset-inline: 0; bottom: 96px; height: 56px; background: linear-gradient(to bottom, rgb(18 18 18 / 0), var(--background)); pointer-events: none; }
+  .session .keys { margin-inline-start: 8px; }
+  .session { background: var(--dark-background); box-shadow: 0 -1px 0 rgb(255 255 255 / 0.05), 0 -18px 40px rgb(0 0 0 / 0.55); }
+  .grid { height: 844px; overflow: hidden; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar" id="top"></header>
+  <div class="head">
+    <div>
+      <h1>Choose playlists to review</h1>
+      <p>31 playlists from your Spotify account. Discoveries and To Rip have their own place, so they’re left out.</p>
+    </div>
+    <div class="tools">
+      <div class="seg" id="seg"></div>
+      <span class="sort">Sort: <b>Spotify order</b></span>
+      <div class="search">${ICON.search}Filter by name<span class="kbd">/</span></div>
+    </div>
+  </div>
+  <main class="grid" id="grid"></main>
+  <div class="fade"></div>
+  <footer class="session" id="session"></footer>
+</div>
+<script src="data.js"></script>
+<script src="playlists.js"></script>
+<script src="picker.js"></script>
+<script>
+  document.getElementById("top").innerHTML = topbar();
+  document.querySelector(".search").innerHTML = `${ICON.search}Filter by name<span class="kbd">/</span>`;
+  const cnt = f => PLAYLISTS.filter(f).length;
+  document.getElementById("seg").innerHTML = `<span class="on">All <b>${PLAYLISTS.length}</b></span><span>Not started <b>${cnt(p => !p.reviewed)}</b></span><span>In progress <b>${cnt(p => p.reviewed && !p.done)}</b></span><span>Done <b>${cnt(p => p.done)}</b></span>`;
+  const SEL = ["Deep End Bass", "Wobble Archive", "MIDNIGHT PHONK"];
+  const FOCUS = "Minimal Groove";
+  const grid = document.getElementById("grid");
+  grid.innerHTML = PLAYLISTS.slice(0, 31).map(p => {
+    const sel = SEL.includes(p.name), foc = p.name === FOCUS;
+    const meta = p.done ? `All reviewed` : p.reviewed ? `${n(p.left)} of ${n(p.songs)} to review` : `${n(p.songs)} songs`;
+    const tip = foc ? `<div class="tip">
+        <div class="row"><b>${p.name}</b><span>${n(p.songs)} songs</span></div>
+        ${bar(p, 8)}
+        <div class="row"><span>${p.reviewed ? n(p.reviewed) + " reviewed, " + n(p.rated) + " rated" : "Not started"}</span><span>${n(p.left)} to review</span></div>
+        <div>${p.artists.length ? "Mostly " + p.artists.join(", ") : ""}</div>
+        <div class="keyline"><span class="kbd">Space</span><span>Add to this review</span><span class="kbd">Enter</span><span>Review only this playlist</span></div>
+      </div>` : "";
+    return `<div class="tile ${sel ? "sel" : ""} ${foc ? "focus" : ""} ${p.done ? "done" : ""}">
+      <div class="art">${coverImg(p)}
+        ${sel ? `<span class="check">${ICON.check}</span>` : foc ? `<span class="check off"></span>` : ""}
+        ${p.done ? `<span class="badge">${ICON.check}All reviewed</span>` : ""}
+      </div>
+      <div class="name">${p.name}</div>
+      <div class="meta">${meta}${p.mine ? "" : `<span class="followed">Followed</span>`}</div>
+      ${p.done ? "" : bar(p, 4)}
+      ${tip}
+    </div>`;
+  }).join("");
+  const sel = SEL.map(byName);
+  document.getElementById("session").innerHTML = sessionDock(sel, { songs: 1200, overlap: 3, haveVerdict: 276 }).replace(
+    '<div class="opts">', '<div class="keys"><span><span class="kbd">A</span> all</span><span><span class="kbd">Space</span> add or remove</span></div><div class="opts">');
+</script>
+</body>
+</html>
