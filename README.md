@@ -17,17 +17,26 @@ socket. Nothing on the desktop needs Python.
 A released package (ADR 0007): from the GitHub Release, or from the repo's Packages panel
 (`ghcr.io/kurtlieber/needle`). The repo is private, so both need a GitHub login.
 
+Once per computer, add the signing key to pacman's keyring:
+
 ```sh
-gh release download -R kurtlieber/needle --pattern 'needle-*.pkg.tar.zst*' --pattern needle-signing-key.asc
+gh release download -R kurtlieber/needle --pattern needle-signing-key.asc
+gpg --show-keys needle-signing-key.asc   # must show E527 8B21 48A2 833A B898  C69F C5A7 379D 20EC B792
+sudo pacman-key --add needle-signing-key.asc
+sudo pacman-key --lsign-key E5278B2148A2833AB898C69FC5A7379D20ECB792
+```
+
+Then, for each release:
+
+```sh
+gh release download -R kurtlieber/needle --pattern 'needle-*.pkg.tar.zst*'
 # or: oras pull ghcr.io/kurtlieber/needle:latest   (after `gh auth token | oras login ghcr.io -u kurtlieber --password-stdin`)
-gpg --import needle-signing-key.asc && gpg --verify needle-*.pkg.tar.zst.sig
-rm needle-*.pkg.tar.zst.sig
 sudo pacman -U needle-*.pkg.tar.zst
 ```
 
-`gpg --verify` must print the fingerprint `E527 8B21 48A2 833A B898  C69F C5A7 379D 20EC B792`. Remove the
-`.sig` before installing: pacman checks a `.sig` it finds next to the package against its own keyring, which doesn't
-have this key, and stops with "required key missing from keyring".
+pacman checks the `.sig` next to the package against its own keyring. Without the key there, it stops with
+"required key missing from keyring". The local signature makes pacman trust the key for any package, as it does a
+third-party repository's key.
 
 From this checkout instead:
 
