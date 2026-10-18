@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="256" height="256"><title>needle</title><style>
+.ring,.arm,.dot,.halo{transform-box:view-box;transform-origin:12px 12px}
+.ring{animation:edge .9s ease-out both,breathe .5s 1.5s ease-out infinite}
+.arm{animation:read 1.5s cubic-bezier(.3,.7,.3,1) both}
+.dot{animation:beat .5s 1.5s ease-out infinite}
+.halo{animation:halo .5s 1.5s ease-out infinite}
+@keyframes edge{from{opacity:0}}
+@keyframes read{from{transform:rotate(80deg)}60%{transform:rotate(-6deg)}80%{transform:rotate(2deg)}to{transform:none}}
+@keyframes beat{12%{transform:scale(1.14)}70%{transform:none}}
+@keyframes breathe{12%{transform:scale(1.04)}52%{transform:none}}
+@keyframes halo{from{opacity:.5;transform:none}to{opacity:0;transform:scale(3.6)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style><circle class="ring" cx="12" cy="12" r="9" fill="none" stroke="#e68e0d" stroke-width="2" opacity=".45"/><circle class="halo" cx="12" cy="12" r="2.2" fill="#e68e0d" opacity="0"/><path class="arm" d="M12 12 L19 4.5" stroke="#e68e0d" stroke-width="2" stroke-linecap="round"/><circle class="dot" cx="12" cy="12" r="2.2" fill="#e68e0d"/></svg>
