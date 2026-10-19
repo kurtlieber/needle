@@ -208,6 +208,30 @@ private slots:
         QCOMPARE(q.currentId(), QString("c"));
     }
 
+    void aRatingKeepsTheTrackUpNext()
+    {
+        // a was skipped (Next, or Spotify can't play it); b gets a Rating and haystack leaves it out
+        ReviewQueue likes;
+        likes.setCards({card("a"), card("b"), card("c")});
+        likes.next();
+        likes.applyVerdict("b", rating(4));
+        likes.setCards({card("a"), card("c")});
+        QCOMPARE(likes.currentId(), QString("b"));
+        QCOMPARE(likes.upNext().value("id").toString(), QString("c"));
+        QVERIFY(likes.next());
+        QCOMPARE(likes.currentId(), QString("c"));
+        // Discoveries lists the tracks with a verdict last
+        ReviewQueue disc;
+        disc.setCards({card("a"), card("b"), card("c")});
+        disc.next();
+        disc.applyVerdict("b", rating(4));
+        disc.setCards({card("a"), card("c"), card("b", rating(4))});
+        QCOMPARE(disc.currentId(), QString("b"));
+        QCOMPARE(disc.upNext().value("id").toString(), QString("c"));
+        QVERIFY(disc.next());
+        QCOMPARE(disc.currentId(), QString("c"));
+    }
+
     void revisitingPlaysSongsWithAVerdictOnce()
     {
         ReviewQueue q;

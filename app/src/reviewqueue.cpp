@@ -39,12 +39,21 @@ void ReviewQueue::setCards(const QVariantList &cards)
 {
     const QString keep = currentId();
     const QVariantMap keepCard = current();
+    const QString after = upNext().value("id").toString();
     m_cards = cards;
     m_current = keep.isEmpty() ? -1 : indexOf(keep);
     // haystack drops a rated track from Rate your likes, but it may still be playing: keep it until moving on
     if (!keep.isEmpty() && m_current < 0 && !keepCard.value("verdict").toMap().isEmpty()) {
         m_cards.prepend(keepCard);
         m_current = 0;
+    }
+    // haystack moves a rated track too (to the end of Discoveries): put it back just before the track that was up
+    // next, or Next goes from wherever it landed (a skipped track, or round to the top of the queue)
+    const int at = indexOf(after);
+    if (m_current >= 0 && isReviewed(m_current) && at >= 0 && !isReviewed(at)) {
+        const auto c = m_cards.takeAt(m_current);
+        m_current = m_current < at ? at - 1 : at;
+        m_cards.insert(m_current, c);
     }
     QStringList history;
     for (const auto &id : std::as_const(m_history))

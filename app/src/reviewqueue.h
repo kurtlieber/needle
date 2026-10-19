@@ -15,7 +15,8 @@
 class ReviewQueue {
 public:
     // Replace the cards (a fresh /v1/state). The current track stays current if it is still in the queue, or if
-    // it has its verdict now (haystack leaves rated tracks out of Rate your likes) until Next.
+    // it has its verdict now (haystack leaves rated tracks out of Rate your likes) until Next. A current track with
+    // its verdict keeps the same track up next.
     void setCards(const QVariantList &cards);
     // Start over with these cards: no history, the first one not reviewed is current.
     void reset(const QVariantList &cards, bool revisit = false, const QStringList &done = {});
