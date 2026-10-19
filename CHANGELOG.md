@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.0](https://github.com/kurtlieber/needle/compare/v0.4.1...v0.5.0) (2026-10-19)
+
+
+### Features
+
+* show the re-ranker's first reason and its Confidence on a Discoveries pick ([f0eeb15](https://github.com/kurtlieber/needle/commit/f0eeb15451107706783a2293c3ad32c7440a3f41))
+* show the re-ranker's first reason and its Confidence on a Discoveries pick ([96a1063](https://github.com/kurtlieber/needle/commit/96a10635bc9ca8700285afcad2c7d11628e3f48f))
+
 ## [0.4.1](https://github.com/kurtlieber/needle/compare/v0.4.0...v0.4.1) (2026-10-19)
 
 
