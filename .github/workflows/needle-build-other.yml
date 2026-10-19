@@ -1,0 +1,65 @@
+# Builds needle's best-effort .deb and .rpm (README, "Other distributions"), then installs each in a fresh
+# container of its distribution and starts needle once. Called by needle-ci and needle-release.
+# Uploads artifacts `needle-other-deb` and `needle-other-rpm` (unsigned; SHA256SUMS covers them on a release).
+name: needle-build-other
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: Commit, branch or tag to build
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { kind: deb, image: 'debian:stable' }
+          - { kind: rpm, image: 'fedora:latest' }
+    name: build (${{ matrix.kind }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    container: ${{ matrix.image }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.ref }}
+
+      - run: app/dist/build-${{ matrix.kind }} dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: needle-other-${{ matrix.kind }}
+          path: dist/*.${{ matrix.kind }}
+          if-no-files-found: error
+          retention-days: 14
+
+  smoke-test:
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { kind: deb, image: 'debian:stable' }
+          - { kind: rpm, image: 'fedora:latest' }
+    name: smoke test (${{ matrix.kind }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container: ${{ matrix.image }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.ref }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: needle-other-${{ matrix.kind }}
+          path: dist
+
+      - run: app/dist/smoke-test dist/*.${{ matrix.kind }}

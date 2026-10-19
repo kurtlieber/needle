@@ -1,0 +1,18 @@
+#!/bin/sh
+# Build needle's best-effort .rpm (README, "Other distributions"). Runs as root in a Fedora container, from the
+# repository root, and writes OUTDIR/needle-X.Y.Z-1.x86_64.rpm.
+#   app/dist/build-rpm [OUTDIR]
+set -eu
+
+OUT="$(mkdir -p "${1:-dist}" && cd "${1:-dist}" && pwd)"
+VERSION="$(cat VERSION)"
+
+dnf install -qy gcc-c++ make cargo rust rpm-build qt6-qtbase-devel qt6-qtdeclarative-devel \
+  pulseaudio-libs-devel openssl-devel dbus-devel
+
+app/bin/build
+STAGE="$(mktemp -d)/needle"
+app/bin/stage "$STAGE"
+
+rpmbuild -bb app/dist/needle.spec --define "needle_version $VERSION" --define "needle_stage $STAGE" \
+  --define "_topdir $(mktemp -d)" --define "_rpmdir $OUT" --define "_build_name_fmt %%{NAME}-%%{VERSION}-%%{RELEASE}.%%{ARCH}.rpm"

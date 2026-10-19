@@ -45,11 +45,5 @@ check() {
 
 package() {
   cd "$pkgname-$pkgver"
-  install -Dm755 app/build/needle "$pkgdir/usr/bin/needle"
-  install -Dm755 engine/target/release/needle-engine "$pkgdir/usr/lib/needle/needle-engine"
-  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
-  install -Dm644 NOTICE "$pkgdir/usr/share/licenses/$pkgname/NOTICE"
-  install -Dm644 app/src/fonts/OFL.txt "$pkgdir/usr/share/licenses/$pkgname/OFL-Archivo.txt"
-  install -Dm644 app/pkgbuild/needle.svg "$pkgdir/usr/share/icons/hicolor/scalable/apps/needle.svg"
-  install -Dm644 app/pkgbuild/needle.desktop "$pkgdir/usr/share/applications/needle.desktop"
+  app/bin/stage "$pkgdir"
 }

@@ -1,0 +1,20 @@
+#!/bin/sh
+# Install a built .deb or .rpm in a fresh container of its distribution and start needle once, offscreen: it
+# fails when a library or a QML module the package doesn't pull in is missing.
+#   app/dist/smoke-test PACKAGE
+set -eu
+
+PKG="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
+case "$PKG" in
+  *.deb) apt-get update -q && DEBIAN_FRONTEND=noninteractive apt-get install -qy "$PKG" ;;
+  *.rpm) dnf install -qy "$PKG" ;;
+  *) echo "not a .deb or .rpm: $PKG" >&2; exit 2 ;;
+esac
+
+if ldd /usr/bin/needle /usr/lib/needle/needle-engine | grep 'not found'; then exit 1; fi
+
+# No haystack, Spotify sign-in or session bus here: needle shows its notices, and the frame proves the QML loads.
+export HOME="$(mktemp -d)" XDG_RUNTIME_DIR="$(mktemp -d)" QT_QPA_PLATFORM=offscreen
+needle --grab "$HOME/frame.png" --delay 3000
+test -s "$HOME/frame.png"
+echo "needle starts and renders: $PKG"

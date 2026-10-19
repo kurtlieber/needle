@@ -1,0 +1,16 @@
+#!/bin/sh
+# Install the built needle (app/build/needle, engine/target/release/needle-engine) under DESTDIR, laid out as
+# every package ships it. The PKGBUILD's package() and app/dist/ (the .deb and .rpm) both use it.
+#   app/bin/stage DESTDIR
+set -eu
+
+DEST="${1:?usage: stage DESTDIR}"
+ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)"
+
+install -Dm755 "$ROOT/app/build/needle" "$DEST/usr/bin/needle"
+install -Dm755 "$ROOT/engine/target/release/needle-engine" "$DEST/usr/lib/needle/needle-engine"
+install -Dm644 "$ROOT/LICENSE" "$DEST/usr/share/licenses/needle/LICENSE"
+install -Dm644 "$ROOT/NOTICE" "$DEST/usr/share/licenses/needle/NOTICE"
+install -Dm644 "$ROOT/app/src/fonts/OFL.txt" "$DEST/usr/share/licenses/needle/OFL-Archivo.txt"
+install -Dm644 "$ROOT/app/pkgbuild/needle.svg" "$DEST/usr/share/icons/hicolor/scalable/apps/needle.svg"
+install -Dm644 "$ROOT/app/pkgbuild/needle.desktop" "$DEST/usr/share/applications/needle.desktop"

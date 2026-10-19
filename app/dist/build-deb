@@ -1,0 +1,50 @@
+#!/bin/sh
+# Build needle's best-effort .deb (README, "Other distributions"). Runs as root in a debian:stable container,
+# from the repository root, and writes OUTDIR/needle_X.Y.Z-1_amd64.deb.
+#   app/dist/build-deb [OUTDIR]
+# Debian 13 is the oldest release with the Qt (6.5 or later, for QtQuick.Effects) needle needs.
+set -eu
+
+OUT="$(mkdir -p "${1:-dist}" && cd "${1:-dist}" && pwd)"
+VERSION="$(cat VERSION)"
+export DEBIAN_FRONTEND=noninteractive
+
+apt-get update -q
+apt-get install -qy --no-install-recommends build-essential ca-certificates curl dpkg-dev pkg-config \
+  qt6-base-dev qt6-declarative-dev libpulse-dev libssl-dev libdbus-1-dev
+# Debian's Rust is older than the engine's crates allow: the current stable, as on Arch
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+PATH="$HOME/.cargo/bin:$PATH"
+
+app/bin/build
+STAGE="$(mktemp -d)/needle"
+app/bin/stage "$STAGE"
+
+# Libraries from what the binaries link; QML modules and the Wayland plugin by hand, since they load at run time.
+WORK="$(mktemp -d)"
+mkdir "$WORK/debian"
+printf 'Source: needle\n\nPackage: needle\nArchitecture: amd64\n' > "$WORK/debian/control"
+LIBS="$(cd "$WORK" && dpkg-shlibdeps -O "$STAGE/usr/bin/needle" "$STAGE/usr/lib/needle/needle-engine" |
+  sed -n 's/^shlibs:Depends=//p')"
+QML="qml6-module-qtquick, qml6-module-qtquick-controls, qml6-module-qtquick-effects, qml6-module-qtquick-layouts,
+ qml6-module-qtquick-shapes, qml6-module-qtquick-templates, qml6-module-qtquick-window,
+ qml6-module-qtqml-workerscript, qt6-wayland, xdg-utils"
+
+mkdir "$STAGE/DEBIAN"
+cat > "$STAGE/DEBIAN/control" <<EOF
+Package: needle
+Version: $VERSION-1
+Architecture: amd64
+Maintainer: Kurt Lieber <3666535+kurtlieber@users.noreply.github.com>
+Depends: $LIBS,
+ $QML
+Section: sound
+Priority: optional
+Homepage: https://github.com/kurtlieber/needle
+Description: Review Spotify discoveries and likes, with haystack
+ needle plays the songs haystack finds for you, shows how each one sounds
+ against what you usually like, and sends your ratings back to haystack.
+ Best effort: Arch Linux (Omarchy) is the supported platform.
+EOF
+
+dpkg-deb --root-owner-group --build "$STAGE" "$OUT/needle_${VERSION}-1_amd64.deb"
