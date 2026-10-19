@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.1](https://github.com/kurtlieber/needle/compare/v0.4.0...v0.4.1) (2026-10-19)
+
+
+### Bug Fixes
+
+* Up next keeps its track after a Rating ([1a2b25d](https://github.com/kurtlieber/needle/commit/1a2b25d3e9914a40cece058fdce242331680a0c0))
+* Up next keeps its track after a Rating ([a56ec17](https://github.com/kurtlieber/needle/commit/a56ec170b8e443cad8559d8fb384e6a4e1066ff2))
+
 ## [0.4.0](https://github.com/kurtlieber/needle/compare/v0.3.0...v0.4.0) (2026-10-19)
 
 
