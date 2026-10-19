@@ -33,6 +33,7 @@ class Review : public QObject {
     Q_PROPERTY(QString nextBatchText READ nextBatchText NOTIFY changed)
     Q_PROPERTY(QVariantMap baseline READ baseline NOTIFY changed)
     Q_PROPERTY(bool canGoBack READ canGoBack NOTIFY changed)
+    Q_PROPERTY(QStringList features READ features NOTIFY changed)
 
 public:
     Review(HaystackClient *haystack, EngineClient *engine, QObject *parent = nullptr);
@@ -54,6 +55,9 @@ public:
     QString nextBatchText() const;
     QVariantMap baseline() const { return m_baseline; }
     bool canGoBack() const { return q().canGoBack(); }
+    // The snapshot's server.features (haystack's docs/api.md): a screen element that needs a newer haystack shows
+    // only when its feature is listed. Empty for a haystack older than the server object.
+    QStringList features() const { return m_features; }
 
     // For tests and the clock: the snapshot handling without the network.
     void applyState(const QVariantMap &state);
@@ -93,6 +97,7 @@ private:
     QString m_queue = "discoveries";
     bool m_hasState = false;
     QVariantMap m_baseline;
+    QStringList m_features;
     QDateTime m_nextBatch;
     QString m_loaded;
     bool m_loadPlays = false;          // the current track was loaded to play (not just to show)

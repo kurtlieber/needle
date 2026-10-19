@@ -159,6 +159,36 @@ private slots:
         QVERIFY(Insight::why({}, "#fff").isEmpty());
     }
 
+    void whyLineShowsTheFirstReasonOnlyWhenTheServerListsIt()
+    {
+        const QVariantMap why{{"sounds_like", QVariantMap{{"title", "Cradles"}, {"artist", "Sub Urban"}}},
+                              {"similarity", 0.9}, {"source_label", "Deezer artist radio"},
+                              {"reasons", QVariantList{"brighter than <you> usually like", "in your usual styles"}}};
+        const QString before = Insight::why(why, "#fff");
+        QVERIFY(!before.contains("Learned"));         // a haystack without the feature: today's line
+        QCOMPARE(Insight::why(why, "#fff", {"rerank"}), before);
+        const QString s = Insight::why(why, "#fff", {"why.reasons"});
+        QVERIFY(s.contains("(similarity 0.90). Learned from your Verdicts: brighter than &lt;you&gt; usually like. "
+                           "Found through Deezer artist radio."));
+        QVERIFY(!s.contains("usual styles"));         // the first reason only
+        QVariantMap none = why;
+        none["reasons"] = QVariantList{};
+        QCOMPARE(Insight::why(none, "#fff", {"why.reasons"}), before);
+        none.remove("reasons");
+        QCOMPARE(Insight::why(none, "#fff", {"why.reasons"}), before);
+    }
+
+    void confidenceChipNeedsTheRerankFeatureAndAProbability()
+    {
+        const QVariantMap why{{"model", "rerank"}, {"confidence", 0.814}};
+        QCOMPARE(Insight::confidence(why, {"why.band", "rerank"}), QString("Confidence 81%"));
+        QCOMPARE(Insight::confidence(why, {"why.band"}), QString());
+        QCOMPARE(Insight::confidence({{"model", "similarity"}, {"confidence", QVariant()}}, {"rerank"}), QString());
+        QCOMPARE(Insight::confidence({}, {"rerank"}), QString());
+        QCOMPARE(Insight::confidence({{"confidence", 1.2}}, {"rerank"}), QString());
+        QCOMPARE(Insight::confidence({{"confidence", 0.0}}, {"rerank"}), QString("Confidence 0%"));
+    }
+
     // ---- a Review queue ----
     void queueStartsAtTheFirstTrackWithoutAVerdict()
     {
@@ -562,6 +592,41 @@ private slots:
         QVERIFY(r.queueDone());
         r.switchQueue();
         QCOMPARE(r.current().value("id").toString(), QString("l1"));
+    }
+
+    // haystack's /v1 only grows (its docs/api.md): a snapshot from a haystack before 0.4.0 and one with the new
+    // fields both review, and the features come from the snapshot.
+    void oldAndNewSnapshotsBothReview()
+    {
+        QTemporaryDir dir;
+        HaystackClient haystack({"http://127.0.0.1:1"}, dir.path() + "/no-token", dir.path() + "/cache",
+                                dir.path() + "/state");
+        Review r(&haystack, nullptr);
+        const QVariantMap old{{"queues", QVariantMap{
+            {"discoveries", QVariantMap{{"items", QVariantList{card("a"), card("b")}}}}}}};
+        r.applyState(old);
+        QCOMPARE(r.current().value("id").toString(), QString("a"));
+        QVERIFY(r.features().isEmpty());
+        QCOMPARE(Insight::confidence(r.current().value("why").toMap(), r.features()), QString());
+        r.pass();
+        QCOMPARE(r.current().value("id").toString(), QString("b"));
+
+        QVariantMap fresh = card("c");
+        fresh["why"] = QVariantMap{{"similarity", 0.8}, {"model", "rerank"}, {"confidence", 0.62},
+                                   {"reasons", QVariantList{"in your usual styles"}},
+                                   {"band", QVariantMap{{"kind", "rerank"}, {"percentile", 91}}}};
+        const QVariantMap now{{"server", QVariantMap{{"version", "0.4.0"},
+                                                     {"features", QVariantList{"why.band", "rerank", "why.reasons"}}}},
+                              {"queues", QVariantMap{{"discoveries", QVariantMap{{"items", QVariantList{fresh}}}}}}};
+        r.applyState(now);
+        QCOMPARE(r.current().value("id").toString(), QString("c"));
+        QCOMPARE(r.features(), QStringList({"why.band", "rerank", "why.reasons"}));
+        const QVariantMap why = r.current().value("why").toMap();
+        QCOMPARE(Insight::confidence(why, r.features()), QString("Confidence 62%"));
+        QVERIFY(Insight::why(why, "#fff", r.features()).contains("Learned from your Verdicts: in your usual styles."));
+        r.rate(4, true);
+        QVERIFY(r.queueDone());
+        QCOMPARE(haystack.pendingVerdicts().size(), 2);
     }
 };
 
