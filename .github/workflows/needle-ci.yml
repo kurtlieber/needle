@@ -1,4 +1,4 @@
-# Builds and tests the needle package on every pull request and push to main.
+# Builds and tests the needle package on every pull request and push to main, and the best-effort .deb and .rpm.
 name: needle-ci
 
 on:
@@ -16,3 +16,6 @@ concurrency:
 jobs:
   build:
     uses: ./.github/workflows/needle-build.yml
+
+  other:
+    uses: ./.github/workflows/needle-build-other.yml

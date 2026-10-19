@@ -1,6 +1,6 @@
 #!/bin/sh
 # Build and install the needle package (needle + needle-engine, the launcher entry and icon) from this checkout.
-# Released packages: GitHub Releases or ghcr.io/kurtlieber/needle (README, "Install").
+# Released packages come from needle's pacman repository on GitHub Releases (README, "Install").
 set -eu
 
 ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
