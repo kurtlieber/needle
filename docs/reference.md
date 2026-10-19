@@ -15,8 +15,7 @@ librespot crates), started by needle and spoken to over a Unix socket. Nothing o
 
 needle's ADRs (0003, 0007, 0008) are in [docs/adr/](adr/). The other numbers (0001, 0002, 0004-0006) are
 haystack's, in [its `docs/adr/`](https://github.com/kurtlieber/haystack/tree/main/docs/adr). The Review screen
-was built from Concept A, "Calibrated", in [docs/mockups/](mockups/). [docs/plan.md](plan.md) is the original
-phase 1 plan, kept for history.
+was built from Concept A, "Calibrated", in [docs/mockups/](mockups/).
 
 ## The pacman repository
 
