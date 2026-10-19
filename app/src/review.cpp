@@ -81,6 +81,7 @@ void Review::applyState(const QVariantMap &state)
     m_discoveries.setCards(disc);
     m_likes.setCards(likes);
     m_baseline = state.value("baseline").toMap().value("traits").toMap();
+    m_features = state.value("server").toMap().value("features").toStringList();
     m_nextBatch = QDateTime::fromString(queues.value("discoveries").toMap().value("next_batch_at").toString(), Qt::ISODate);
     const bool first = !m_hasState;
     m_hasState = true;

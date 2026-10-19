@@ -110,7 +110,7 @@ QString Insight::albumLine(const QVariantMap &card)
     return parts.join(", ");
 }
 
-QString Insight::why(const QVariantMap &why, const QString &strongColor)
+QString Insight::why(const QVariantMap &why, const QString &strongColor, const QStringList &features)
 {
     if (why.isEmpty())
         return {};
@@ -125,6 +125,10 @@ QString Insight::why(const QVariantMap &why, const QString &strongColor)
             out += QStringLiteral(" (similarity %1)").arg(sim, 0, 'f', 2);
         out += ". ";
     }
+    // display text from haystack, shown as it comes (never parsed)
+    const QString reason = why.value("reasons").toList().value(0).toString();
+    if (features.contains("why.reasons") && !reason.isEmpty())
+        out += QStringLiteral("Learned from your Verdicts: %1. ").arg(reason.toHtmlEscaped());
     const QString source = why.value("source_label").toString();
     if (!source.isEmpty()) {
         out += QStringLiteral("Found through %1").arg(source.toHtmlEscaped());
@@ -132,6 +136,14 @@ QString Insight::why(const QVariantMap &why, const QString &strongColor)
                                                  : QStringLiteral(".");
     }
     return out.trimmed();
+}
+
+QString Insight::confidence(const QVariantMap &why, const QStringList &features)
+{
+    double p;
+    if (!features.contains("rerank") || !number(why.value("confidence"), &p) || p < 0 || p > 1)
+        return {};
+    return QStringLiteral("Confidence %1%").arg(qRound(p * 100));
 }
 
 static QString names(const QStringList &list, const QString &strongColor)

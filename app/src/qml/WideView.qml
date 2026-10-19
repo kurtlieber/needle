@@ -170,7 +170,7 @@ Item {
             visible: text !== ""
             textFormat: Text.StyledText
             text: review.queue === "playlists" ? insight.playlistLine(v.card, theme.foreground)
-                                               : insight.why(v.card.why || ({}), theme.foreground)
+                                               : insight.why(v.card.why || ({}), theme.foreground, review.features)
             wrapMode: Text.WordWrap
             lineHeight: 1.18
             font.family: "Archivo"; font.pointSize: 10.125
@@ -182,6 +182,11 @@ Item {
             y: (why.visible ? why.y + why.height : head.y + head.height) + 14
             width: parent.width - (upnext.visible && y < upnext.height ? upnext.width + 24 : 0)
             spacing: 8
+            Chip {
+                visible: text !== ""
+                outline: true
+                text: review.queue === "playlists" ? "" : insight.confidence(v.card.why || ({}), review.features)
+            }
             Repeater {
                 model: v.card.styles || []
                 delegate: Chip { required property var modelData; text: modelData[0] }

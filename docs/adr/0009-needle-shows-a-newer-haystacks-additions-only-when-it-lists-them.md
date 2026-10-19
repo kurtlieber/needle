@@ -1,0 +1,7 @@
+# needle shows a newer haystack's additions only when it lists them
+
+haystack's `/v1` only grows: new fields and endpoints are additions, and the server names its optional ones in `server.features` on `GET /v1/health` and `GET /v1/state` (haystack's `docs/api.md`, "Server and features"). needle and haystack are released apart, so a listener can run a newer needle against an older haystack. needle reads every new field as optional and shows a screen element that needs one only when the snapshot lists its feature. The first two are the re-ranker's strongest reason on a Discovery's why line (`why.reasons`) and its Confidence as a chip (`rerank`). A snapshot without `server`, from a haystack before 0.1.0, means no features: the screen is as it was.
+
+**Considered Options**: comparing `server.version` with the release that added each field (one number for many additions, and it breaks for a haystack built from a branch); showing an element whenever its field is present (an older haystack and a field that is empty on purpose look the same, so the screen couldn't tell "no reason given" from "no reasons yet"); a needle release that needs the newer haystack (a listener who updates needle first would lose Review until haystack follows).
+
+**Consequences**: every new element comes with its feature name and a test that feeds `Review::applyState` a snapshot without it and one with it. A reason is display text from haystack, escaped and shown as it comes; needle never parses it, so haystack can reword its reasons without a needle release.

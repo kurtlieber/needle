@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QObject>
+#include <QStringList>
 #include <QVariantList>
 #include <QVariantMap>
 
@@ -39,8 +40,13 @@ public:
     // "Single, 2018" / "Album, 2011" / "2018"
     Q_INVOKABLE static QString albumLine(const QVariantMap &card);
     // "Picked because it sounds like <b>Cradles</b> by Sub Urban (similarity 0.96). Found through Deezer artist
-    // radio, as one of this week's exploration picks." (rich text, escaped); "" without a reason.
-    Q_INVOKABLE static QString why(const QVariantMap &why, const QString &strongColor);
+    // radio, as one of this week's exploration picks." (rich text, escaped); "" without a reason. With the feature
+    // why.reasons and a reason on the card, the re-ranker's first one follows the first sentence: "Learned from your
+    // Verdicts: close to your 4-5★ tracks."
+    Q_INVOKABLE static QString why(const QVariantMap &why, const QString &strongColor,
+                                   const QStringList &features = {});
+    // "Confidence 81%" for a Discoveries pick the re-ranker ordered (feature rerank); "" otherwise.
+    Q_INVOKABLE static QString confidence(const QVariantMap &why, const QStringList &features);
     // A Playlist review's song: "From <b>All the Dubstep</b>, one of the 3 playlists in this review. It's also on
     // <b>EDM</b>. It's in your Liked Songs." (rich text, escaped); "" for a card from another queue.
     Q_INVOKABLE static QString playlistLine(const QVariantMap &card, const QString &strongColor);
