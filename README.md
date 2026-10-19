@@ -1,141 +1,175 @@
-# needle
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/brand/svg/needle-lockup-on-dark.svg">
+    <img alt="needle" src="docs/brand/svg/needle-lockup-on-light.svg" width="420">
+  </picture>
+</p>
 
-A desktop app for Review: it plays the Review queues (Discoveries, Rate your likes, and the playlists you pick
-from your Spotify library) through its own librespot engine, shows each track's Readings against your Baseline
-(Concept A, "Calibrated", `docs/mockups/`), and sends your Verdicts to haystack, the server, which
-makes every Spotify write. needle knows haystack only through its HTTP API
-([haystack's `docs/api.md`](https://github.com/kurtlieber/haystack/blob/main/docs/api.md)). Terms: `GLOSSARY.md`. Design:
-`docs/plan.md`; needle's ADRs (0003, 0007, 0008) are in `docs/adr/`. The other numbers (0001, 0002,
-0004-0006) are haystack's, in [its `docs/adr/`](https://github.com/kurtlieber/haystack/tree/main/docs/adr).
+<p align="center"><b>Play it. Read it. Judge it.</b></p>
 
-Two programs, one package: `needle` (`app/`, C++ and Qt Quick, the `omarchy-app` pattern) and
-`needle-engine` (`engine/`, Rust and the librespot crates), started by needle and spoken to over a Unix
-socket. Nothing on the desktop needs Python.
+needle is a desktop music player for rating songs, fast. It plays the new music
+[haystack](https://github.com/kurtlieber/haystack) finds for your Spotify account, shows you how each song sounds
+next to what you usually like, and lets you rate it with a single key. Your ratings go back to haystack, so its
+next picks get better.
+
+<p align="center">
+  <img alt="needle's review screen: the song, its tempo, and six readings against your own baseline"
+       src="docs/mockups/playlists-review.png" width="900">
+</p>
+
+- **Three things to review.** This week's **Discoveries** from haystack, **Rate your likes** (the songs you've
+  liked in Spotify but never rated), and any of your **Playlists**.
+- **See how it sounds.** Tempo, valence (sad to happy), energy, danceability, acousticness, instrumentalness and
+  loudness, each shown against your own baseline: "slower, darker and more instrumental than what you usually
+  like".
+- **Rate without stopping.** `1`–`5` rates the song, `Shift` + a number rates it and moves on, `P` passes, `X`
+  dislikes. The music keeps playing while you decide.
+- **Works offline.** Ratings wait on your computer until haystack is reachable again.
+- **Fits your desktop.** Follows your Omarchy theme, works with media keys and the Omarchy bar, and respects
+  reduced motion.
+
+## Contents
+
+- [What you need](#what-you-need)
+- [The easiest setup: ask your AI agent](#the-easiest-setup-ask-your-ai-agent)
+- [Install](#install)
+- [Connect to haystack](#connect-to-haystack)
+- [Using needle](#using-needle)
+- [Roadmap](#roadmap)
+- [License](#license)
+
+## What you need
+
+- **haystack**, running on a server you can reach (a home server, a NAS or a VPS). needle is haystack's
+  companion app: it gets the songs and your baseline from haystack and sends your ratings there. If you don't
+  have it yet, the next section sets up both.
+- **Spotify Premium.** needle plays through librespot, an open-source Spotify client, which needs a Premium
+  account. See [License](#license) for what that means.
+- **Arch Linux or Omarchy, on Wayland.** needle is built and tested on [Omarchy](https://omarchy.org). Other
+  Wayland desktops and other distributions are unsupported (see [Install](#install) and the
+  [Roadmap](#roadmap)).
+
+## The easiest setup: ask your AI agent
+
+If you use an AI coding agent that can run commands, such as Claude Code, point it at [AGENTS.md](AGENTS.md):
+
+> Set up needle and haystack for me by following https://github.com/kurtlieber/needle/blob/main/AGENTS.md
+
+It installs needle, sets up haystack on your server (or checks the one you have), and connects the two. A few
+steps stay yours, such as signing in to Spotify; the agent gives you those as a short list. AGENTS.md has only
+been tested with Claude Code, but any agent that can run shell commands should work.
+
+Prefer to do it yourself? Set up haystack with [its README](https://github.com/kurtlieber/haystack#readme), then
+read on.
 
 ## Install
 
-A released package (ADR 0007): from the GitHub Release, or from the repo's Packages panel
-(`ghcr.io/kurtlieber/needle`). The repo is private, so both need a GitHub login.
-
-Once per computer, add the signing key to pacman's keyring:
+### Arch Linux and Omarchy (supported)
 
 ```sh
-gh release download -R kurtlieber/needle --pattern needle-signing-key.asc
-gpg --show-keys needle-signing-key.asc   # must show E527 8B21 48A2 833A B898  C69F C5A7 379D 20EC B792
-sudo pacman-key --add needle-signing-key.asc
-sudo pacman-key --lsign-key E5278B2148A2833AB898C69FC5A7379D20ECB792
+curl -fsSL https://raw.githubusercontent.com/kurtlieber/needle/main/install.sh | bash
 ```
 
-Then, for each release:
+The script ([read it first](install.sh)) trusts needle's signing key, adds needle's pacman repository, and installs
+needle. From then on needle updates with the rest of your system (`sudo pacman -Syu`, or Omarchy's update), and
+pacman checks every update's signature. needle shows up in your app launcher.
+
+To do the same steps by hand, or to uninstall, see
+[docs/reference.md, "The pacman repository"](docs/reference.md#the-pacman-repository).
+
+### Other distributions (best effort, unsupported)
+
+Each [release](https://github.com/kurtlieber/needle/releases/latest) also has a `.deb` (Debian 13 or later,
+Ubuntu 25.04 or later) and an `.rpm` (current Fedora), built automatically. They are provided **as is**: they're
+checked only to install and start, and problems that happen only there may not get fixed. Arch Linux and Omarchy
+are the only supported platforms.
 
 ```sh
-gh release download -R kurtlieber/needle --pattern 'needle-*.pkg.tar.zst*'
-# or: oras pull ghcr.io/kurtlieber/needle:latest   (after `gh auth token | oras login ghcr.io -u kurtlieber --password-stdin`)
-sudo pacman -U needle-*.pkg.tar.zst
+sudo apt install ./needle_*_amd64.deb    # Debian, Ubuntu
+sudo dnf install ./needle-*.x86_64.rpm   # Fedora
 ```
 
-pacman checks the `.sig` next to the package against its own keyring. Without the key there, it stops with
-"required key missing from keyring". The local signature makes pacman trust the key for any package, as it does a
-third-party repository's key.
+They don't update by themselves: install the next release the same way. Check a download against the release's
+`SHA256SUMS`.
 
-From this checkout instead:
+## Connect to haystack
 
-```sh
-app/bin/install   # makepkg -fsi: builds both, runs the tests, installs; needle shows up in the launcher
-```
+needle needs two things from haystack: where it is, and its API key.
 
-## Release
+1. **Where it is.** Create `~/.config/needle/config.toml`:
 
-Merge the release PR that release-please keeps open ("chore(main): release needle X.Y.Z"). It collects the
-`feat:` and `fix:` commits, so use conventional commit messages. The merge tags `vX.Y.Z`; `needle-release` builds, signs and publishes the package to the Release and to GHCR. To
-rebuild a release, run `needle-release` by hand with its tag. The version is `VERSION`, which
-release-please bumps; don't edit it by hand.
-
-First run, once per computer:
-
-1. **Where haystack is.** `~/.config/needle/config.toml`, which needle reads at start and never writes:
    ```toml
    [haystack]
-   servers = ["http://192.168.1.10:8517", "http://10.20.0.10:8517"]   # in order: the next one when one doesn't answer
-   token_file = "~/.config/needle/token"                               # the default
+   servers = ["http://192.168.1.10:8517"]   # your haystack server; list more than one and needle tries each in turn
    ```
-   Without the file needle tries `http://127.0.0.1:8517`. `NEEDLE_SERVER=url[,url]` and `NEEDLE_TOKEN_FILE=path`
-   override it. A file needle can't read is ignored with a warning on stderr.
-2. **haystack's token.** The API's bearer token, one line, in the token file (0600):
+
+2. **Its key.** Copy haystack's API token into needle's token file:
+
    ```sh
-   umask 077; mkdir -p ~/.config/needle
-   cat > ~/.config/needle/token   # paste it, then Ctrl-D
+   (umask 077; mkdir -p ~/.config/needle
+    ssh <your server> 'cd ~/haystack && docker compose exec -T haystack haystack token show' > ~/.config/needle/token)
    ```
-   needle picks the file up without a restart.
-3. **Spotify.** needle shows "Sign in to Spotify to play": press Enter, sign in in the browser window
-   (Premium account). librespot keeps reusable credentials in `~/.local/state/needle/librespot/` (0700), so this
-   is a one-time step. Verdicts work before it.
 
-## Keys
+3. **Spotify.** Start needle. It shows "Sign in to Spotify to play": press `Enter` and sign in in the browser
+   window. You only do this once.
+
+If needle says Offline, check that your computer's network is in haystack's `api.allow_networks` and that the
+server's firewall allows port 8517. More settings: [docs/reference.md, "Settings"](docs/reference.md#settings).
+
+## Using needle
 
 | Key | Does |
 |---|---|
-| `1`–`5` | Rate (the track keeps playing) |
-| `Shift` + `1`–`5` | Rate and play the next track |
-| `P` | Pass (moves on) |
-| `X` | Dislike (moves on) |
+| `1`–`5` | Rate (the song keeps playing) |
+| `Shift` + `1`–`5` | Rate and play the next song |
+| `P` / `X` | Pass / Dislike (moves on) |
 | `Space` | Play or pause |
-| `←` / `→` | Back or ahead 10 s |
-| `J` | Jump ahead 30 s |
-| `N` | Next track |
-| `B` | Back to the previous track (to change its verdict) |
-| `Tab` | Next queue: Discoveries, Rate your likes, Playlists |
-| `L` | Choose playlists to review (again: back to the review) |
-| `G` | Cover glow on or off |
-| `M` | Motion: follow the desktop's animation setting, or override it |
-| `?` | All shortcuts |
-| `Q` | Quit |
-| `Enter` | Sign in to Spotify (when asked) |
+| `N` / `B` | Next song / back to the previous one (to change your rating) |
+| `Tab` | Switch between Discoveries, Rate your likes and Playlists |
+| `L` | Choose which playlists to review |
+| `?` | Every shortcut |
 
-Choosing playlists (the Playlists tab, or `L`):
+What a rating does in Spotify (likes, the Discoveries playlist) is up to haystack: see
+[How haystack works](https://github.com/kurtlieber/haystack/blob/main/docs/how-it-works.md). Every key, and how
+needle behaves offline and with several servers: [docs/reference.md](docs/reference.md).
 
-| Key | Does |
-|---|---|
-| Arrows | Move between playlists |
-| `Space` | Add the playlist in focus to the review, or take it out |
-| `A` | Pick every playlist shown (again: none) |
-| `Enter` | Start the review (with none picked: the playlist in focus alone) |
-| `/` | Filter by name (`Enter` or `Esc` goes back to the covers) |
-| `F` | Show all, Not started, In progress or Done |
-| `O` | Sort: Spotify order, Most to review, Name |
-| `V` | Skip songs with a verdict, or play them again |
-| `S` | Shuffle on or off |
-| `Esc` | Back to the review |
+## Roadmap
 
-Media keys and the Omarchy bar work through MPRIS (`org.mpris.MediaPlayer2.needle`).
+**Planned**
 
-## How it behaves
+- **Rate your own music files.** Review and rate songs from your local music folder, not only from Spotify.
+- **Find music by how it sounds.** Search your library or music folder by the seven traits: tempo, valence,
+  energy, danceability, acousticness, instrumentalness and loudness.
+- **macOS and Android.**
+- **Sign haystack in to Spotify from needle,** so setting up haystack's Spotify access is a click instead of a
+  copy-and-paste.
 
-* **Offline.** needle caches haystack's last snapshot (`~/.cache/needle/state.json`) and the covers of the next
-  tracks (`~/.cache/needle/covers/`), and keeps an outbox of verdicts and plays
-  (`~/.local/state/needle/outbox.json`) until haystack accepts them. The status line says how many wait.
-* **Servers.** The ones in `config.toml`, in order: when one doesn't answer needle tries the next, once round,
-  then shows Offline and tries again every 30 s.
-* **Plays.** A track left after 5 s or more, or played to the end, is reported to haystack (it marks the
-  discovery as heard).
-* **Playlists.** The Playlists tab shows every playlist in your Spotify library but haystack's own Discoveries and
-  To Rip, with how far each is reviewed. A review of the ones you pick plays their songs, each once, and survives a
-  restart (`~/.local/state/needle/playlist-review.json`; the cards are saved in `~/.cache/needle/playlists/`).
-  Spotify won't list a Followed playlist for haystack, so needle's engine reads its songs (one playlist at a time,
-  while needle runs and is signed in to Spotify) and sends them to haystack (ADR 0008).
-* **Theme.** Every colour is an Omarchy theme token, followed live (`~/.local/state/omarchy/current/theme`).
-  The cover glow is the cover's own pixels, blurred.
-* **Reduced motion.** The desktop's `enable-animations` (settings portal), or `M`: the beat pulse stands still
-  and the spectrum shows a slowly settling average.
-* **Layout.** The wide layout from about 1100 x 860; the compact column below that.
+**Maybe, later**
 
-## Develop
+- **haystack's settings in needle,** so the common ones can be changed without editing haystack's `config.toml`.
+- **The AUR or Omarchy's app list.** needle's own pacman repository works today; a listing there may come later.
 
-```sh
-app/bin/build     # cargo build --release (engine) + qmake6/make (app) into app/build/
-app/bin/test      # Qt tests offscreen, then the engine's cargo tests
-app/build/needle  # finds app/build/needle-engine next to it (or NEEDLE_ENGINE=path)
-```
+**Not planned**
 
-Development flags: `--grab FILE` renders the window to a file after `--delay` ms and quits, `--size WxH`, and
-`--press 4,P,Shift+5` sends keys 3 s after start. `NEEDLE_TOKEN_FILE` points at another token file.
+- **iOS.** Apple requires a paid developer account to ship an app. needle and haystack are free and make no
+  money, and I don't use iOS, so there's no reason to take that on.
+- **Merging needle and haystack.** This is a deliberate design choice. haystack runs headless on one server (a
+  VPS, a machine at home, wherever) and is the single source of truth for your ratings. needle runs on as many
+  computers as you like, and they all share that one store.
+
+**Unsupported**
+
+- **X11, and desktops other than Omarchy.** needle is Wayland only and is tested only on Omarchy. Other Wayland
+  desktops may work, but problems that happen only there may not get fixed.
+
+## License
+
+needle is MIT licensed ([LICENSE](LICENSE)). It bundles the Archivo font (SIL Open Font License) and is built
+with open-source Rust crates; [NOTICE](NOTICE) lists them and their licenses.
+
+needle is not affiliated with, or endorsed by, Spotify. It plays through librespot, an open-source Spotify client
+that is not Spotify's own, and needs a Spotify Premium account. Spotify's terms may not allow unofficial clients,
+so decide for yourself before you use it.
+
+Security reports: [SECURITY.md](SECURITY.md). Working on the code: [docs/reference.md](docs/reference.md) and
+[AGENTS.md, "Working on the code"](AGENTS.md#working-on-the-code).
