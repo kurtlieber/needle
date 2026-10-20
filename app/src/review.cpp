@@ -171,12 +171,28 @@ void Review::setQueue(const QString &name)
     measureSoon();
 }
 
-void Review::switchQueue()
+QString Review::tabNext() const
 {
     if (m_queue == "discoveries")
-        setQueue(hasCalibrate() ? "calibrate" : "likes");
-    else
-        setQueue(m_queue == "calibrate" ? "likes" : m_queue == "likes" ? "playlists" : "discoveries");
+        return hasCalibrate() ? "calibrate" : "likes";
+    return m_queue == "calibrate" ? "likes" : m_queue == "likes" ? "playlists" : "discoveries";
+}
+
+QString Review::doneNext() const
+{
+    const bool calibrate = hasCalibrate() && calibrateLeft() > 0;
+    if (m_queue == "discoveries")
+        return calibrate ? "calibrate" : likesLeft() > 0 ? "likes" : "";
+    if (m_queue == "calibrate")
+        return likesLeft() > 0 ? "likes" : discoveriesLeft() > 0 ? "discoveries" : "";
+    if (m_queue == "likes")
+        return discoveriesLeft() > 0 ? "discoveries" : calibrate ? "calibrate" : "";
+    return {};
+}
+
+void Review::switchQueue()
+{
+    setQueue(tabNext());
 }
 
 void Review::startPlaylistReview(const QVariantList &cards, bool revisit, const QStringList &done, bool activate)

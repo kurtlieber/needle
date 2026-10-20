@@ -194,6 +194,19 @@ private slots:
         quiet["calibrate"] = QVariantMap{{"band", "50-75"}, {"percentile", 60.0}, {"chance", QVariant()}};
         QVERIFY(Insight::why(quiet, "#fff", {"queue.calibrate"})
                     .startsWith(QString::fromUtf8("haystack isn’t sure about this one. Your verdict teaches it the most.")));
+        // nothing it sounds like: the other sentences follow on, one space apart
+        QVariantMap lone = why;
+        lone.remove("sounds_like");
+        lone.remove("similarity");
+        lone["reasons"] = QVariantList{"in your usual styles"};
+        const QString ask = QString::fromUtf8("haystack isn’t sure about this one: the re-ranker gives it &lt;even&gt; "
+                                              "odds. Your verdict teaches it the most.");
+        QCOMPARE(Insight::why(lone, "#fff", {"queue.calibrate", "why.reasons"}),
+                 ask + " Learned from your Verdicts: in your usual styles. Found through Deezer artist radio.");
+        lone.remove("source_label");
+        QCOMPARE(Insight::why(lone, "#fff", {"queue.calibrate", "why.reasons"}),
+                 ask + " Learned from your Verdicts: in your usual styles.");
+        QCOMPARE(Insight::why(lone, "#fff", {"queue.calibrate"}), ask);
     }
 
     void confidenceChipNeedsTheRerankFeatureAndAProbability()
@@ -707,6 +720,59 @@ private slots:
         QVERIFY(!r.hasCalibrate());
         QCOMPARE(r.queue(), QString("discoveries"));
         QCOMPARE(r.current().value("id").toString(), QString("a"));
+    }
+
+    // a finished queue's notice offers the next queue with something left, Calibrate included
+    void theDoneNoticeOffersTheNextQueueWithSomethingLeft()
+    {
+        QTemporaryDir dir;
+        HaystackClient haystack({"http://127.0.0.1:1"}, dir.path() + "/no-token", dir.path() + "/cache",
+                                dir.path() + "/state");
+        Review r(&haystack, nullptr);
+        const QVariantMap queues{{"discoveries", QVariantMap{{"items", QVariantList{card("a")}}}},
+                                 {"calibrate", QVariantMap{{"items", QVariantList{card("k1"), card("k2")}}}},
+                                 {"likes", QVariantMap{{"items", QVariantList{card("l1")}}}}};
+        r.applyState({{"server", QVariantMap{{"features", QVariantList{"queue.calibrate"}}}}, {"queues", queues}});
+        QCOMPARE(r.queue(), QString("discoveries"));
+        QCOMPARE(r.tabNext(), QString("calibrate"));
+        r.rate(4, true);
+        QVERIFY(r.queueDone());
+        QCOMPARE(r.doneNext(), QString("calibrate"));
+        r.setQueue("likes");
+        QCOMPARE(r.tabNext(), QString("playlists"));
+        r.rate(5, true);
+        QVERIFY(r.queueDone());
+        QCOMPARE(r.doneNext(), QString("calibrate"));    // Discoveries are done; Calibrate still has two
+        r.setQueue("calibrate");
+        QCOMPARE(r.tabNext(), QString("likes"));
+        QCOMPARE(r.doneNext(), QString());               // not done yet
+        r.rate(3, true);
+        r.pass();
+        QVERIFY(r.queueDone());
+        QCOMPARE(r.doneNext(), QString());               // nothing left anywhere
+
+        // Rate your likes done with Discoveries left: back to Discoveries first (a fresh outbox: the verdicts above
+        // would count as given)
+        QTemporaryDir dir2;
+        HaystackClient fresh({"http://127.0.0.1:1"}, dir2.path() + "/no-token", dir2.path() + "/cache",
+                             dir2.path() + "/state");
+        Review r2(&fresh, nullptr);
+        r2.applyState({{"server", QVariantMap{{"features", QVariantList{"queue.calibrate"}}}}, {"queues", queues}});
+        r2.setQueue("likes");
+        r2.rate(5, true);
+        QCOMPARE(r2.doneNext(), QString("discoveries"));
+        // without the feature, Calibrate is never offered
+        QTemporaryDir dir3;
+        HaystackClient old({"http://127.0.0.1:1"}, dir3.path() + "/no-token", dir3.path() + "/cache",
+                           dir3.path() + "/state");
+        Review r3(&old, nullptr);
+        r3.applyState({{"queues", QVariantMap{{"calibrate", queues.value("calibrate")},
+                                              {"likes", queues.value("likes")}}}});
+        r3.setQueue("likes");
+        QCOMPARE(r3.current().value("id").toString(), QString("l1"));
+        r3.rate(5, true);
+        QVERIFY(r3.queueDone());
+        QCOMPARE(r3.doneNext(), QString());
     }
 
     // with Discoveries reviewed, needle opens on Calibrate before Rate your likes

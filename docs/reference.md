@@ -143,10 +143,11 @@ Media keys and the Omarchy bar work through MPRIS (`org.mpris.MediaPlayer2.needl
   haystack 0.3.0 and later); against an older haystack the line is as before and there is no chip (ADR 0014).
 * **Calibrate.** haystack 0.5.0 and later (feature `queue.calibrate`) adds a queue of the tracks it is least sure
   about, up to 30 a week by default, from across its ranking rather than only the top (haystack's ADR 0015). needle
-  shows it as a tab after Discoveries and a stop on `Tab`, and opens on it when Discoveries are done. Its verdicts
-  are ordinary Ratings, Passes and Dislikes, sent with the queue `calibrate`. The line under the title says why
-  haystack is unsure ("haystack isn’t sure about this one: the re-ranker gives it even odds") and which of your
-  tracks the song sounds most like. Against an older haystack there is no tab (ADR 0014).
+  shows it as a tab after Discoveries and a stop on `Tab`, and opens on it when Discoveries are done; a finished
+  queue's notice offers it while it has songs left. Its verdicts are ordinary Ratings, Passes and Dislikes, sent
+  with the queue `calibrate`. The line under the title says why haystack is unsure ("haystack isn’t sure about
+  this one: the re-ranker gives it even odds") and which of your tracks the song sounds most like. Against an
+  older haystack there is no tab (ADR 0014).
 * **Theme.** Every colour is an Omarchy theme token, followed live (`~/.local/state/omarchy/current/theme`).
   The cover glow is the cover's own pixels, blurred.
 * **Reduced motion.** The desktop's `enable-animations` (settings portal), or `M`: the beat pulse stands still

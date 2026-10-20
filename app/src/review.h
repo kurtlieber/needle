@@ -38,6 +38,8 @@ class Review : public QObject {
     Q_PROPERTY(QVariantMap baseline READ baseline NOTIFY changed)
     Q_PROPERTY(bool canGoBack READ canGoBack NOTIFY changed)
     Q_PROPERTY(QStringList features READ features NOTIFY changed)
+    Q_PROPERTY(QString tabNext READ tabNext NOTIFY changed)
+    Q_PROPERTY(QString doneNext READ doneNext NOTIFY changed)
 
 public:
     Review(HaystackClient *haystack, EngineClient *engine, QObject *parent = nullptr);
@@ -68,6 +70,10 @@ public:
     // The snapshot's server.features (haystack's docs/api.md): a screen element that needs a newer haystack shows
     // only when its feature is listed. Empty for a haystack older than the server object.
     QStringList features() const { return m_features; }
+    // The queue Tab goes to (switchQueue), and the one a finished queue's notice offers: the next with something
+    // left to review, or "" when none has.
+    QString tabNext() const;
+    QString doneNext() const;
 
     // For tests and the clock: the snapshot handling without the network.
     void applyState(const QVariantMap &state);
