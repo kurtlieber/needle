@@ -173,5 +173,8 @@ and `fix:` commits, so use conventional commit messages. Check the docs against 
 ([AGENTS.md](../AGENTS.md#working-on-the-code) lists them) and merge any fix before the release PR. The merge tags
 `vX.Y.Z` and opens the release as a draft. `needle-release` builds, signs and uploads the package and the pacman
 repository, then publishes the release, so "latest" always has a complete repository. The .deb and .rpm follow; if
-one of them fails, the release goes out without it. To rebuild a release, run `needle-release` by hand with its
-tag. The version is `VERSION`, which release-please bumps; don't edit it by hand.
+one of them fails, the release goes out without it. Once the release is public, `needle-release` starts
+lieber.org's deploy, so https://lieber.org/needle/ shows the new version within minutes. That uses the repository
+secret `LIEBER_ORG_DEPLOY_TOKEN`, which can only start lieber.org's workflows; without it, lieber.org catches up
+within three hours. To rebuild a release, run `needle-release` by hand with its tag. The version is `VERSION`,
+which release-please bumps; don't edit it by hand.

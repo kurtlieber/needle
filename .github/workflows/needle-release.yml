@@ -3,6 +3,7 @@
 # builds and signs the package, attaches it with a one-package pacman repository (needle.db), and publishes the
 # release. pacman reads the repository from releases/latest/download, so the release only goes public once it holds
 # everything. The best-effort .deb and .rpm are attached after that; their failure doesn't hold up the release.
+# Once the release is public, the site job starts lieber.org's deploy so its needle page shows the new version.
 # Run it by hand (workflow_dispatch) with an existing tag to rebuild and republish that release.
 name: needle-release
 
@@ -176,3 +177,18 @@ jobs:
           mv sums SHA256SUMS
           cat SHA256SUMS
           gh release upload "$TAG" -R "$GITHUB_REPOSITORY" --clobber "${files[@]}" SHA256SUMS
+
+  # lieber.org shows needle's newest release. Starting its deploy now saves waiting up to three hours for its own
+  # check. LIEBER_ORG_DEPLOY_TOKEN can only start lieber.org's workflows; without it, the site catches up on its own.
+  site:
+    needs: publish
+    if: always() && needs.publish.result == 'success'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.LIEBER_ORG_DEPLOY_TOKEN }}
+    steps:
+      - name: Start lieber.org's deploy
+        run: |
+          if [ -z "$GH_TOKEN" ]; then echo "::warning::secret LIEBER_ORG_DEPLOY_TOKEN is not set; lieber.org shows the release within three hours"; exit 0; fi
+          gh api -X POST repos/kurtlieber/lieber.org/actions/workflows/deploy.yml/dispatches -f ref=main
+          echo "::notice::Started lieber.org's deploy"
