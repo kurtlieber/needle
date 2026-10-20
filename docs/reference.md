@@ -5,17 +5,17 @@ and how it is developed and released. Terms: [GLOSSARY.md](../GLOSSARY.md). Deci
 
 ## How it fits together
 
-needle is the desktop app for Review: it plays the Review queues (Discoveries, Rate your likes, and the playlists
-you pick from your Spotify library) through its own librespot engine, shows each track's Readings against your
-Baseline, and sends your Verdicts to haystack, the server, which makes every Spotify write. needle knows haystack
+needle is the desktop app for Review: it plays the Review queues (Discoveries, Calibrate, Rate your likes, and the
+playlists you pick from your Spotify library) through its own librespot engine, shows each track's Readings against
+your Baseline, and sends your Verdicts to haystack, the server, which makes every Spotify write. needle knows haystack
 only through its HTTP API ([haystack's `docs/api.md`](https://github.com/kurtlieber/haystack/blob/main/docs/api.md)).
 
 Two programs, one package: `needle` (`app/`, C++ and Qt Quick) and `needle-engine` (`engine/`, Rust and the
 librespot crates), started by needle and spoken to over a Unix socket. Nothing on the desktop needs Python.
 
-needle's ADRs (0003, 0007, 0008) are in [docs/adr/](adr/). The other numbers (0001, 0002, 0004-0006) are
-haystack's, in [its `docs/adr/`](https://github.com/kurtlieber/haystack/tree/main/docs/adr). The Review screen
-was built from Concept A, "Calibrated", in [docs/mockups/](mockups/).
+needle's ADRs (0003, 0007, 0008, 0014) are in [docs/adr/](adr/). The other numbers (0001, 0002, 0004-0006,
+0009-0013, 0015 on) are haystack's, in [its `docs/adr/`](https://github.com/kurtlieber/haystack/tree/main/docs/adr).
+The Review screen was built from Concept A, "Calibrated", in [docs/mockups/](mockups/).
 
 ## The pacman repository
 
@@ -96,7 +96,7 @@ a one-time step. Verdicts work before it.
 | `J` | Jump ahead 30 s |
 | `N` | Next track |
 | `B` | Back to the previous track (to change its verdict) |
-| `Tab` | Next queue: Discoveries, Rate your likes, Playlists |
+| `Tab` | Next queue: Discoveries, Calibrate, Rate your likes, Playlists |
 | `L` | Choose playlists to review (again: back to the review) |
 | `G` | Cover glow on or off |
 | `M` | Motion: follow the desktop's animation setting, or override it |
@@ -128,8 +128,9 @@ Media keys and the Omarchy bar work through MPRIS (`org.mpris.MediaPlayer2.needl
   (`~/.local/state/needle/outbox.json`) until haystack accepts them. The status line says how many wait.
 * **Servers.** The ones in `config.toml`, in order: when one doesn't answer needle tries the next, once round,
   then shows Offline and tries again every 30 s.
-* **Plays.** A track left after 5 s or more, or played to the end, is reported to haystack (it marks the
-  discovery as heard).
+* **Plays.** A track left after 5 s or more, or played to the end, is reported to haystack with how long it
+  played (it marks the discovery as heard). From haystack 0.5.0, a Discoveries or Calibrate track left before
+  30 s without a verdict counts a little against it, as a Soft no (haystack's ADR 0016).
 * **Playlists.** The Playlists tab shows every playlist in your Spotify library but haystack's own Discoveries and
   To Rip, with how far each is reviewed. A review of the ones you pick plays their songs, each once, and survives a
   restart (`~/.local/state/needle/playlist-review.json`; the cards are saved in `~/.cache/needle/playlists/`).
@@ -140,6 +141,13 @@ Media keys and the Omarchy bar work through MPRIS (`org.mpris.MediaPlayer2.needl
   ("Learned from your Verdicts: close to your 4-5★ tracks") and an outlined chip before the styles gives its
   Confidence ("Confidence 81%"). Each needs its feature in haystack's `server.features` (`why.reasons`, `rerank`,
   haystack 0.3.0 and later); against an older haystack the line is as before and there is no chip (ADR 0014).
+* **Calibrate.** haystack 0.5.0 and later (feature `queue.calibrate`) adds a queue of the tracks it is least sure
+  about, up to 30 a week by default, from across its ranking rather than only the top (haystack's ADR 0015). needle
+  shows it as a tab after Discoveries and a stop on `Tab`, and opens on it when Discoveries are done; a finished
+  queue's notice offers it while it has songs left. Its verdicts are ordinary Ratings, Passes and Dislikes, sent
+  with the queue `calibrate`. The line under the title says why haystack is unsure ("haystack isn’t sure about
+  this one: the re-ranker gives it even odds") and which of your tracks the song sounds most like. Against an
+  older haystack there is no tab (ADR 0014).
 * **Theme.** Every colour is an Omarchy theme token, followed live (`~/.local/state/omarchy/current/theme`).
   The cover glow is the cover's own pixels, blurred.
 * **Reduced motion.** The desktop's `enable-animations` (settings portal), or `M`: the beat pulse stands still
