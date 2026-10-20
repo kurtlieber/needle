@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.6.0](https://github.com/kurtlieber/needle/compare/v0.5.0...v0.6.0) (2026-10-20)
+
+
+### Features
+
+* **review:** a Calibrate tab for the songs haystack is least sure about ([a9a1e01](https://github.com/kurtlieber/needle/commit/a9a1e0190dc9fb58bea9aef8b42153df288a59ad))
+* **review:** a Calibrate tab for the songs haystack is least sure about ([cfb98e9](https://github.com/kurtlieber/needle/commit/cfb98e9aeffeb955f96948f5dbd5df90af9eb617))
+
+
+### Bug Fixes
+
+* **review:** a finished Rate your likes offers Calibrate while it has songs left ([b8e7bec](https://github.com/kurtlieber/needle/commit/b8e7bec529ed84c0003a8bd9624b883890e1c9ed))
+
 ## [0.5.0](https://github.com/kurtlieber/needle/compare/v0.4.1...v0.5.0) (2026-10-19)
 
 
