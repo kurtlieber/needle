@@ -139,7 +139,7 @@ Media keys and the Omarchy bar work through MPRIS (`org.mpris.MediaPlayer2.needl
   haystack found it. When haystack's re-ranker picked it, the line adds the re-ranker's strongest reason
   ("Learned from your Verdicts: close to your 4-5★ tracks") and an outlined chip before the styles gives its
   Confidence ("Confidence 81%"). Each needs its feature in haystack's `server.features` (`why.reasons`, `rerank`,
-  haystack 0.3.0 and later); against an older haystack the line is as before and there is no chip (ADR 0009).
+  haystack 0.3.0 and later); against an older haystack the line is as before and there is no chip (ADR 0014).
 * **Theme.** Every colour is an Omarchy theme token, followed live (`~/.local/state/omarchy/current/theme`).
   The cover glow is the cover's own pixels, blurred.
 * **Reduced motion.** The desktop's `enable-animations` (settings portal), or `M`: the beat pulse stands still
