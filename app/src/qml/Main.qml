@@ -21,6 +21,17 @@ ApplicationWindow {
     // The Playlists queue shows the picker until a Playlist review starts, and again on L.
     readonly property bool picking: review.hasState && review.queue === "playlists"
                                     && (playlists.pickerOpen || !review.hasPlaylistReview)
+    // The queue Tab goes to (Review::switchQueue), and the one a finished queue's notice offers: the next with
+    // something to review.
+    readonly property string tabNext: review.queue === "discoveries" ? (review.hasCalibrate ? "calibrate" : "likes")
+                                      : review.queue === "calibrate" ? "likes"
+                                      : review.queue === "likes" ? "playlists" : "discoveries"
+    readonly property string doneNext: review.queue === "discoveries"
+                                       ? (review.hasCalibrate && review.calibrateLeft > 0 ? "calibrate"
+                                          : review.likesLeft > 0 ? "likes" : "")
+                                       : review.queue === "calibrate"
+                                       ? (review.likesLeft > 0 ? "likes" : review.discoveriesLeft > 0 ? "discoveries" : "")
+                                       : review.queue === "likes" && review.discoveriesLeft > 0 ? "discoveries" : ""
 
     Backdrop {
         visible: prefs.glow
@@ -68,17 +79,26 @@ ApplicationWindow {
             anchors.centerIn: parent
             visible: review.hasState && review.queueDone && !win.picking
             title: review.queue === "discoveries" ? "This week's Discoveries are reviewed"
+                   : review.queue === "calibrate" ? "Calibrate is done for now"
                    : review.queue === "playlists" ? "These playlists are reviewed" : "Every like has a Rating"
             body: review.queue === "discoveries"
                   ? (review.nextBatchText ? "The next batch lands " + review.nextBatchText + ". " : "")
-                    + (review.likesLeft > 0 ? review.likesLeft + " liked songs still have no Rating." : "")
+                    + (win.doneNext === "calibrate"
+                       ? (review.calibrateLeft === 1 ? "1 song in Calibrate still needs a verdict."
+                          : review.calibrateLeft + " songs in Calibrate still need a verdict.")
+                       : review.likesLeft > 0 ? review.likesLeft + " liked songs still have no Rating." : "")
+                  : review.queue === "calibrate" ? "haystack asks about more songs each week."
                   : review.queue === "playlists" ? "Every song in this review has a verdict now."
                   : "New likes show up here after the next sync."
-            action: review.queue === "discoveries" && review.likesLeft > 0 ? "Rate your likes"
-                    : review.queue === "likes" && review.discoveriesLeft > 0 ? "Back to Discoveries"
-                    : review.queue === "playlists" ? "Choose more playlists" : ""
-            actionKey: review.queue === "playlists" ? "L" : "Tab"
-            onActivated: review.queue === "playlists" ? playlists.openPicker() : review.switchQueue()
+            action: review.queue === "playlists" ? "Choose more playlists"
+                    : win.doneNext === "calibrate" ? "Calibrate"
+                    : win.doneNext === "likes" ? "Rate your likes"
+                    : win.doneNext === "discoveries" ? "Back to Discoveries" : ""
+            actionKey: review.queue === "playlists" ? "L" : win.doneNext === win.tabNext ? "Tab" : ""
+            onActivated: {
+                if (review.queue === "playlists") playlists.openPicker()
+                else review.queue = win.doneNext
+            }
         }
 
         HelpOverlay { id: help; picking: win.picking }

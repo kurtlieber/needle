@@ -23,6 +23,7 @@ Item {
             Text {
                 text: review.queue === "likes" ? "Rate your likes, " + review.likesLeft + " left"
                       : review.queue === "playlists" ? "Playlists, " + review.playlistsPosition + " of " + review.playlistsTotal
+                      : review.queue === "calibrate" ? "Calibrate, " + review.calibratePosition + " of " + review.calibrateTotal
                       : review.queueDone ? "Discoveries, done"
                       : "Discoveries, " + review.discoveriesPosition + " of " + review.discoveriesTotal
                 font.family: "Archivo"; font.pointSize: 9.375; font.features: { "tnum": 1 }

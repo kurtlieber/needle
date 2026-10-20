@@ -13,7 +13,7 @@ Rectangle {
         ["1 – 5", "Rate (keeps playing)"], ["Shift + 1 – 5", "Rate and play the next track"],
         ["P", "Pass"], ["X", "Dislike"], ["Space", "Play or pause"], ["← →", "Back or ahead 10 s"],
         ["J", "Jump ahead 30 s"], ["N", "Next track"], ["B", "Back to the previous track"],
-        ["Tab", "Next queue: Discoveries, Rate your likes, Playlists"], ["L", "Choose playlists to review"],
+        ["Tab", "Next queue: Discoveries, Calibrate, Rate your likes, Playlists"], ["L", "Choose playlists to review"],
         ["G", "Cover glow on or off"], ["M", "Motion: follow the desktop, or not"], ["?", "These shortcuts"], ["Q", "Quit"]]
     readonly property var pickerKeys: [
         ["← → ↑ ↓", "Move between playlists"], ["Space", "Add to the review, or take out"], ["A", "Pick every one shown"],

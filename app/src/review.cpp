@@ -60,7 +60,11 @@ static QVariantMap withVerdict(QVariantMap card, const QVariantMap &v)
 void Review::applyState(const QVariantMap &state)
 {
     const auto queues = state.value("queues").toMap();
+    const QStringList features = state.value("server").toMap().value("features").toStringList();
     QVariantList disc = queues.value("discoveries").toMap().value("items").toList();
+    // only a haystack that lists the feature has the queue (its docs/api.md)
+    QVariantList calibrate = features.contains("queue.calibrate")
+                                 ? queues.value("calibrate").toMap().value("items").toList() : QVariantList{};
     QVariantList likes = queues.value("likes").toMap().value("items").toList();
     // verdicts haystack hasn't got yet still count here
     QHash<QString, QVariantMap> pending;
@@ -71,7 +75,7 @@ void Review::applyState(const QVariantMap &state)
                            {{"kind", o.value("kind").toString()}, {"stars", o.value("stars").toVariant()},
                             {"given_at", o.value("given_at").toString()}});
         }
-    for (auto *list : {&disc, &likes})
+    for (auto *list : {&disc, &calibrate, &likes})
         for (auto &c : *list) {
             const QString id = c.toMap().value("id").toString();
             if (pending.contains(id))
@@ -79,15 +83,24 @@ void Review::applyState(const QVariantMap &state)
         }
     const QString before = q().currentId();
     m_discoveries.setCards(disc);
+    m_calibrate.setCards(calibrate);
     m_likes.setCards(likes);
     m_baseline = state.value("baseline").toMap().value("traits").toMap();
-    m_features = state.value("server").toMap().value("features").toStringList();
+    m_features = features;
+    if (m_queue == "calibrate" && !hasCalibrate()) {
+        leaveTrack(false);
+        m_queue = "discoveries";        // a haystack rolled back to before 0.5.0
+    }
     m_nextBatch = QDateTime::fromString(queues.value("discoveries").toMap().value("next_batch_at").toString(), Qt::ISODate);
     const bool first = !m_hasState;
     m_hasState = true;
-    // open on Discoveries while it has tracks waiting, else on Rate your likes
-    if (first && !m_discoveries.hasCurrent() && m_likes.hasCurrent())
-        m_queue = "likes";
+    // open on Discoveries while it has tracks waiting, else on Calibrate, else on Rate your likes
+    if (first && !m_discoveries.hasCurrent()) {
+        if (m_calibrate.hasCurrent())
+            m_queue = "calibrate";
+        else if (m_likes.hasCurrent())
+            m_queue = "likes";
+    }
     emit changed();
     if (q().currentId() != before || first)
         loadCurrent(false);
@@ -141,7 +154,9 @@ QString Review::nextBatchText() const
 
 void Review::setQueue(const QString &name)
 {
-    if (name == m_queue || (name != "likes" && name != "discoveries" && name != "playlists"))
+    const bool offered = name == "discoveries" || name == "likes" || name == "playlists"
+                         || (name == "calibrate" && hasCalibrate());
+    if (name == m_queue || !offered)
         return;
     const bool wasPlaying = m_engine && m_engine->playing();
     leaveTrack(false);
@@ -158,7 +173,10 @@ void Review::setQueue(const QString &name)
 
 void Review::switchQueue()
 {
-    setQueue(m_queue == "discoveries" ? "likes" : m_queue == "likes" ? "playlists" : "discoveries");
+    if (m_queue == "discoveries")
+        setQueue(hasCalibrate() ? "calibrate" : "likes");
+    else
+        setQueue(m_queue == "calibrate" ? "likes" : m_queue == "likes" ? "playlists" : "discoveries");
 }
 
 void Review::startPlaylistReview(const QVariantList &cards, bool revisit, const QStringList &done, bool activate)
@@ -203,7 +221,7 @@ void Review::give(const QString &kind, int stars, bool advance)
         local.insert("stars", stars);
     }
     // the same track can sit in more than one queue (a liked discovery); the others move past it
-    for (auto *queue : {&m_discoveries, &m_likes, &m_playlists}) {
+    for (auto *queue : {&m_discoveries, &m_calibrate, &m_likes, &m_playlists}) {
         queue->applyVerdict(id, local);
         if (queue != &q() && queue->currentId() == id && queue->currentReviewed())
             queue->next();
@@ -282,7 +300,7 @@ void Review::prefetch()
     if (!m_haystack)
         return;
     QStringList urls;
-    for (const auto *queue : {&m_discoveries, &m_likes, &m_playlists})
+    for (const auto *queue : {&m_discoveries, &m_calibrate, &m_likes, &m_playlists})
         for (const auto &c : queue->lookahead(queue == &q() ? 8 : 3)) {
             urls << c.toMap().value("cover").toString() << c.toMap().value("cover_small").toString();
         }

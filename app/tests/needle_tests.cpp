@@ -178,6 +178,24 @@ private slots:
         QCOMPARE(Insight::why(none, "#fff", {"why.reasons"}), before);
     }
 
+    void whyLineAsksAboutACalibrateCardOnlyWithTheFeature()
+    {
+        const QVariantMap why{{"sounds_like", QVariantMap{{"title", "Cradles"}, {"artist", "Sub Urban"}}},
+                              {"similarity", 0.9}, {"source_label", "Deezer artist radio"}, {"exploration", false},
+                              {"calibrate", QVariantMap{{"band", "90-97"}, {"percentile", 93.1}, {"chance", 0.52},
+                                                        {"reason", "the re-ranker gives it <even> odds"}}}};
+        const QString s = Insight::why(why, "#fff", {"queue.calibrate"});
+        QVERIFY(s.startsWith(QString::fromUtf8("haystack isn’t sure about this one: the re-ranker gives it &lt;even&gt; "
+                                               "odds. Your verdict teaches it the most. It sounds most like <b>")));
+        QVERIFY(s.endsWith("(similarity 0.90). Found through Deezer artist radio."));
+        // a haystack without the feature never sends the object; if one did, the line stays an offer's
+        QVERIFY(Insight::why(why, "#fff").startsWith("Picked because it sounds like"));
+        QVariantMap quiet = why;
+        quiet["calibrate"] = QVariantMap{{"band", "50-75"}, {"percentile", 60.0}, {"chance", QVariant()}};
+        QVERIFY(Insight::why(quiet, "#fff", {"queue.calibrate"})
+                    .startsWith(QString::fromUtf8("haystack isn’t sure about this one. Your verdict teaches it the most.")));
+    }
+
     void confidenceChipNeedsTheRerankFeatureAndAProbability()
     {
         const QVariantMap why{{"model", "rerank"}, {"confidence", 0.814}};
@@ -627,6 +645,84 @@ private slots:
         r.rate(4, true);
         QVERIFY(r.queueDone());
         QCOMPARE(haystack.pendingVerdicts().size(), 2);
+    }
+
+    // haystack 0.5.0's Calibrate queue (feature queue.calibrate): a tab and a stop on Tab only when it is listed
+    void calibrateIsAQueueOnlyWhenTheServerListsIt()
+    {
+        QTemporaryDir dir;
+        HaystackClient haystack({"http://127.0.0.1:1"}, dir.path() + "/no-token", dir.path() + "/cache",
+                                dir.path() + "/state");
+        Review r(&haystack, nullptr);
+        const QVariantMap queues{{"discoveries", QVariantMap{{"items", QVariantList{card("a")}}}},
+                                 {"calibrate", QVariantMap{{"items", QVariantList{card("k1"), card("k2")}}}},
+                                 {"likes", QVariantMap{{"items", QVariantList{card("l1")}}}}};
+        const auto server = [](const QVariantList &features) {
+            return QVariantMap{{"version", "0.5.0"}, {"features", features}};
+        };
+        const QVariantMap without{{"server", server({"why.band", "rerank", "why.reasons"})}, {"queues", queues}};
+        r.applyState(without);
+        QVERIFY(!r.hasCalibrate());
+        QCOMPARE(r.calibrateTotal(), 0);
+        QCOMPARE(r.queue(), QString("discoveries"));
+        r.setQueue("calibrate");                     // not offered: stays
+        QCOMPARE(r.queue(), QString("discoveries"));
+        QStringList round;
+        for (int i = 0; i < 3; ++i) {
+            r.switchQueue();
+            round << r.queue();
+        }
+        QCOMPARE(round, QStringList({"likes", "playlists", "discoveries"}));
+
+        const QVariantMap with{{"server", server({"why.band", "rerank", "why.reasons", "queue.calibrate"})},
+                               {"queues", queues}};
+        r.applyState(with);
+        QVERIFY(r.hasCalibrate());
+        QCOMPARE(r.calibrateTotal(), 2);
+        QCOMPARE(r.calibrateLeft(), 2);
+        round.clear();
+        for (int i = 0; i < 4; ++i) {
+            r.switchQueue();
+            round << r.queue();
+        }
+        QCOMPARE(round, QStringList({"calibrate", "likes", "playlists", "discoveries"}));
+        r.setQueue("calibrate");
+        QCOMPARE(r.current().value("id").toString(), QString("k1"));
+        QCOMPARE(r.calibratePosition(), 1);
+        r.rate(2, true);
+        QCOMPARE(r.current().value("id").toString(), QString("k2"));
+        QCOMPARE(r.calibrateLeft(), 1);
+        const auto v = haystack.pendingVerdicts().last().toObject();
+        QCOMPARE(v.value("track").toString(), QString("k1"));
+        QCOMPARE(v.value("queue").toString(), QString("calibrate"));
+        QCOMPARE(v.value("stars").toInt(), 2);
+        r.pass();
+        QVERIFY(r.queueDone());
+        // a snapshot that doesn't know these verdicts yet still shows them
+        r.applyState(with);
+        QCOMPARE(r.calibrateLeft(), 0);
+
+        // haystack rolled back to before 0.5.0: back to Discoveries
+        r.applyState(without);
+        QVERIFY(!r.hasCalibrate());
+        QCOMPARE(r.queue(), QString("discoveries"));
+        QCOMPARE(r.current().value("id").toString(), QString("a"));
+    }
+
+    // with Discoveries reviewed, needle opens on Calibrate before Rate your likes
+    void aNewSessionOpensOnCalibrateWhenDiscoveriesAreDone()
+    {
+        QTemporaryDir dir;
+        HaystackClient haystack({"http://127.0.0.1:1"}, dir.path() + "/no-token", dir.path() + "/cache",
+                                dir.path() + "/state");
+        Review r(&haystack, nullptr);
+        r.applyState({{"server", QVariantMap{{"features", QVariantList{"queue.calibrate"}}}},
+                      {"queues", QVariantMap{
+                          {"discoveries", QVariantMap{{"items", QVariantList{card("a", rating(4))}}}},
+                          {"calibrate", QVariantMap{{"items", QVariantList{card("k1")}}}},
+                          {"likes", QVariantMap{{"items", QVariantList{card("l1")}}}}}}});
+        QCOMPARE(r.queue(), QString("calibrate"));
+        QCOMPARE(r.current().value("id").toString(), QString("k1"));
     }
 };
 

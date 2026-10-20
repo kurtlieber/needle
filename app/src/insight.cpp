@@ -115,11 +115,21 @@ QString Insight::why(const QVariantMap &why, const QString &strongColor, const Q
     if (why.isEmpty())
         return {};
     QString out;
+    // a Calibrate card: haystack picked it because it can't tell, not because of what it sounds like
+    const auto calibrate = why.value("calibrate").toMap();
+    const bool asking = features.contains("queue.calibrate") && !calibrate.isEmpty();
+    if (asking) {
+        const QString unsure = calibrate.value("reason").toString();
+        out = unsure.isEmpty() ? QStringLiteral("haystack isn’t sure about this one. ")
+                               : QStringLiteral("haystack isn’t sure about this one: %1. ").arg(unsure.toHtmlEscaped());
+        out += QStringLiteral("Your verdict teaches it the most. ");
+    }
     const auto like = why.value("sounds_like").toMap();
     if (!like.isEmpty()) {
-        out = QStringLiteral("Picked because it sounds like <b><font color=\"%1\">%2</font></b> by %3")
-                  .arg(strongColor, like.value("title").toString().toHtmlEscaped(),
-                       like.value("artist").toString().toHtmlEscaped());
+        out += QStringLiteral("%1 <b><font color=\"%2\">%3</font></b> by %4")
+                   .arg(asking ? QStringLiteral("It sounds most like") : QStringLiteral("Picked because it sounds like"),
+                        strongColor, like.value("title").toString().toHtmlEscaped(),
+                        like.value("artist").toString().toHtmlEscaped());
         double sim;
         if (number(why.value("similarity"), &sim))
             out += QStringLiteral(" (similarity %1)").arg(sim, 0, 'f', 2);

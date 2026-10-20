@@ -17,7 +17,8 @@ next picks get better.
        src="docs/mockups/playlists-review.png" width="900">
 </p>
 
-- **Three things to review.** This week's **Discoveries** from haystack, **Rate your likes** (the songs you've
+- **Four things to review.** This week's **Discoveries** from haystack, **Calibrate** (a few songs haystack
+  can't make up its mind about, where your rating teaches it the most), **Rate your likes** (the songs you've
   liked in Spotify but never rated), and any of your **Playlists**.
 - **See how it sounds.** Tempo, valence (sad to happy), energy, danceability, acousticness, instrumentalness and
   loudness, each shown against your own baseline: "slower, darker and more instrumental than what you usually
@@ -125,7 +126,7 @@ server's firewall allows port 8517. More settings: [docs/reference.md, "Settings
 | `P` / `X` | Pass / Dislike (moves on) |
 | `Space` | Play or pause |
 | `N` / `B` | Next song / back to the previous one (to change your rating) |
-| `Tab` | Switch between Discoveries, Rate your likes and Playlists |
+| `Tab` | Switch between Discoveries, Calibrate, Rate your likes and Playlists |
 | `L` | Choose which playlists to review |
 | `?` | Every shortcut |
 

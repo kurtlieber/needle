@@ -1,7 +1,7 @@
 import QtQuick
 
-// The Review queues: Discoveries, Rate your likes, and Playlists (the picker, or the Playlist review once one is
-// started). Tab goes round them.
+// The Review queues: Discoveries, Calibrate (when haystack offers it), Rate your likes, and Playlists (the picker,
+// or the Playlist review once one is started). Tab goes round them.
 Rectangle {
     implicitWidth: row.implicitWidth + 8
     implicitHeight: 40
@@ -49,6 +49,12 @@ Rectangle {
             name: "discoveries"; label: "Discoveries"
             count: review.discoveriesTotal === 0 ? "" : review.queueDone && review.queue === "discoveries"
                    ? "done" : review.discoveriesPosition + " of " + review.discoveriesTotal
+        }
+        Tab {
+            name: "calibrate"; label: "Calibrate"
+            visible: review.hasCalibrate
+            count: review.calibrateTotal === 0 ? "" : review.queueDone && review.queue === "calibrate"
+                   ? "done" : review.calibratePosition + " of " + review.calibrateTotal
         }
         Tab { name: "likes"; label: "Rate your likes"; count: String(review.likesLeft) }
         Tab {
