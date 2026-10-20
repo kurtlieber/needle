@@ -161,3 +161,10 @@ Run `needle` from a terminal to see its log. Every setting, file and key: [docs/
 - Use conventional commit messages (`feat:`, `fix:`): release-please builds the changelog and the version from
   them.
 - Never commit a token, a `config.toml`, or anything from `~/.local/state/needle/`.
+- **The docs change with the code, in the same PR.** A change to what needle shows or does, a key, a setting or how
+  it installs updates every doc that describes it: [README.md](README.md), [docs/reference.md](docs/reference.md),
+  this file's setup steps, [GLOSSARY.md](GLOSSARY.md) for a new term, and an ADR for a decision. ADR numbers are
+  shared with haystack: take the next number that is free in both repositories.
+- **Every release checks the docs.** Before the release PR is merged, read the docs above against everything it
+  collects (`git log --oneline v<last>..main`). Fix any line the release makes untrue, including older text that
+  the new behaviour contradicts, in a `docs:` PR, and merge that first so the tag carries docs that match.
