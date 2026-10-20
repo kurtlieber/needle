@@ -160,9 +160,10 @@ Development flags: `--grab FILE` renders the window to a file after `--delay` ms
 
 ## Release
 
-Merge the release PR that release-please keeps open ("chore(main): release needle X.Y.Z"). It collects the
-`feat:` and `fix:` commits, so use conventional commit messages. The merge tags `vX.Y.Z` and opens the release as
-a draft. `needle-release` builds, signs and uploads the package and the pacman repository, then publishes the
-release, so "latest" always has a complete repository. The .deb and .rpm follow; if one of them fails, the
-release goes out without it. To rebuild a release, run `needle-release` by hand with its tag. The version is
-`VERSION`, which release-please bumps; don't edit it by hand.
+Merge the release PR that release-please keeps open ("chore(main): release needle X.Y.Z"). It collects the `feat:`
+and `fix:` commits, so use conventional commit messages. Check the docs against them first
+([AGENTS.md](../AGENTS.md#working-on-the-code) lists them) and merge any fix before the release PR. The merge tags
+`vX.Y.Z` and opens the release as a draft. `needle-release` builds, signs and uploads the package and the pacman
+repository, then publishes the release, so "latest" always has a complete repository. The .deb and .rpm follow; if
+one of them fails, the release goes out without it. To rebuild a release, run `needle-release` by hand with its
+tag. The version is `VERSION`, which release-please bumps; don't edit it by hand.
