@@ -13,6 +13,8 @@ Item {
 
     readonly property bool beating: playing && bpm > 0 && !prefs.reducedMotion
     readonly property real dot: compact ? 14 : 32
+    // pixels per unit on screen: the dot's glow is a texture, so it follows the window's zoom (Main.qml)
+    readonly property real density: Screen.devicePixelRatio * (Window.window ? Window.window.zoom || 1 : 1)
 
     Rectangle {           // outer ring
         anchors.centerIn: parent
@@ -35,6 +37,10 @@ Item {
         color: theme.accent
         scale: 1 + 0.14 * beat.flash
         layer.enabled: true
+        // the texture covers the padded rect MultiEffect sets for the glow, or the dot alone before that
+        layer.textureSize: layer.sourceRect.width > 0
+            ? Qt.size(layer.sourceRect.width * p.density, layer.sourceRect.height * p.density)
+            : Qt.size(width * p.density, height * p.density)
         layer.effect: MultiEffect {
             shadowEnabled: true; shadowColor: Qt.alpha(theme.accent, 0.75); shadowBlur: 0.8
             shadowHorizontalOffset: 0; shadowVerticalOffset: 0; autoPaddingEnabled: true

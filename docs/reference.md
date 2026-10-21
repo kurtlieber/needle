@@ -152,7 +152,8 @@ Media keys and the Omarchy bar work through MPRIS (`org.mpris.MediaPlayer2.needl
   The cover glow is the cover's own pixels, blurred.
 * **Reduced motion.** The desktop's `enable-animations` (settings portal), or `M`: the beat pulse stands still
   and the spectrum shows a slowly settling average.
-* **Layout.** The wide layout from about 1100 x 860; the compact column below that.
+* **Layout.** The wide layout from about 1100 x 860; the compact column below that. A window well past the
+  mockup's 1600 x 1000 (a 4K screen at scale 1) zooms the whole layout to fill it, in quarter steps.
 
 ## Develop
 

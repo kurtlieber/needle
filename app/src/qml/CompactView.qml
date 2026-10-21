@@ -109,7 +109,7 @@ Item {
             wrapMode: Text.WordWrap
             textFormat: Text.StyledText
             text: v.card.measure === "pending" || v.card.measure === "unknown" ? "haystack is measuring this track…"
-                  : v.card.measure === "no_preview" ? "No Readings: Deezer has no preview of this track."
+                  : v.card.measure === "no_preview" ? "No Readings: haystack found no preview of this track to measure."
                   : (v.summary.lead ? "<b><font color=\"" + theme.brightForeground + "\">"
                                        + v.summary.lead + "</font></b>" : "") + v.summary.tail
             font.family: "Archivo"; font.pointSize: 10.125

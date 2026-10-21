@@ -8,6 +8,8 @@ Item {
     property real radius: 16
     property bool shadow: true
     property string placeholder: "needle"     // the icon while there's no picture
+    // pixels per unit on screen: the art and its mask are textures, so they follow the window's zoom (Main.qml)
+    readonly property real density: Screen.devicePixelRatio * (Window.window ? Window.window.zoom || 1 : 1)
 
     Rectangle {           // the shadow, cast by a rounded plate behind the art (masking and shadow don't mix)
         visible: c.shadow
@@ -28,6 +30,7 @@ Item {
         id: art
         anchors.fill: parent
         layer.enabled: true
+        layer.textureSize: Qt.size(width * c.density, height * c.density)
         layer.effect: MultiEffect {
             maskEnabled: true
             maskSource: mask
@@ -47,8 +50,8 @@ Item {
             fillMode: Image.PreserveAspectCrop
             asynchronous: true
             cache: true
-            sourceSize.width: c.width * Screen.devicePixelRatio
-            sourceSize.height: c.height * Screen.devicePixelRatio
+            sourceSize.width: c.width * c.density
+            sourceSize.height: c.height * c.density
         }
     }
     Item {
@@ -56,6 +59,7 @@ Item {
         anchors.fill: parent
         layer.enabled: true
         layer.smooth: true
+        layer.textureSize: Qt.size(width * c.density, height * c.density)
         visible: false
         Rectangle { anchors.fill: parent; radius: c.radius; color: "black"; antialiasing: true }
     }

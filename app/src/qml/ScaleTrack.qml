@@ -17,6 +17,8 @@ Item {
     property real needleBelow: 14
     property real arrow: 6              // half-width of the needle's head
     property bool glow: true
+    // pixels per unit on screen: the needle's glow is a texture, so it follows the window's zoom (Main.qml)
+    readonly property real density: Screen.devicePixelRatio * (Window.window ? Window.window.zoom || 1 : 1)
 
     readonly property bool hasSong: song !== undefined && song !== null
     readonly property bool hasBase: base !== undefined && base !== null
@@ -58,6 +60,10 @@ Item {
         x: s.sx - s.arrow; y: s.needleTop - s.arrow * (4 / 3)
         width: s.arrow * 2; height: s.baselineY + s.needleBelow - y
         layer.enabled: s.glow
+        // the texture covers the padded rect MultiEffect sets for the glow, or the needle alone before that
+        layer.textureSize: layer.sourceRect.width > 0
+            ? Qt.size(layer.sourceRect.width * s.density, layer.sourceRect.height * s.density)
+            : Qt.size(width * s.density, height * s.density)
         layer.effect: MultiEffect {
             shadowEnabled: true; shadowColor: Qt.alpha(theme.accent, 0.6); shadowBlur: 0.35
             shadowHorizontalOffset: 0; shadowVerticalOffset: 0; autoPaddingEnabled: true

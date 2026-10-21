@@ -77,7 +77,10 @@ Item {
                 bottomPadding: 12
             }
             Spectrum {
+                // a painted texture, so it follows the window's zoom (Main.qml)
+                readonly property real zoom: Window.window ? Window.window.zoom || 1 : 1
                 width: parent.width; height: 96
+                textureSize: Qt.size(width * zoom, height * zoom)
                 bands: engine.bands; peaks: engine.peaks
                 barColor: theme.foreground; peakColor: theme.accent
                 reducedMotion: prefs.reducedMotion
@@ -205,7 +208,7 @@ Item {
                 wrapMode: Text.WordWrap
                 text: v.card.measure === "pending" || v.card.measure === "unknown"
                       ? "haystack is measuring this track…"
-                      : v.card.measure === "no_preview" ? "No Readings for this track: Deezer has no preview of it."
+                      : v.card.measure === "no_preview" ? "No Readings for this track: haystack found no preview of it to measure."
                       : (v.summary.lead ? "<b><font color=\"" + theme.brightForeground + "\">"
                                            + v.summary.lead + "</font></b>" : "") + v.summary.tail
                 font.family: "Archivo"; font.pixelSize: 15
