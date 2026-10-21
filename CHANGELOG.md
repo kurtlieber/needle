@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.2](https://github.com/kurtlieber/needle/compare/v0.6.1...v0.6.2) (2026-10-21)
+
+
+### Bug Fixes
+
+* **app:** a click on the Playlists tab during a review opens the picker ([#19](https://github.com/kurtlieber/needle/issues/19)) ([ca4e7e8](https://github.com/kurtlieber/needle/commit/ca4e7e8c6bb12f7cdb7a54d6dd67cdfeb464137b))
+
 ## [0.6.1](https://github.com/kurtlieber/needle/compare/v0.6.0...v0.6.1) (2026-10-21)
 
 
