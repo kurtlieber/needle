@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.6.1](https://github.com/kurtlieber/needle/compare/v0.6.0...v0.6.1) (2026-10-21)
+
+
+### Bug Fixes
+
+* **app:** a 4K window zooms the layout to fill it, and stays sharp ([6ea358c](https://github.com/kurtlieber/needle/commit/6ea358ccb96a18e77071f6780bee61129a96d4bd))
+* **app:** a 4K window zooms the layout to fill it, and stays sharp ([0f0da64](https://github.com/kurtlieber/needle/commit/0f0da6439dad868f9a05871d521aca37a8ab996e))
+* **review:** say haystack found no preview, not that Deezer has none ([c38b315](https://github.com/kurtlieber/needle/commit/c38b315314b87e5e86c2f6fb26b158093bced222))
+
 ## [0.6.0](https://github.com/kurtlieber/needle/compare/v0.5.0...v0.6.0) (2026-10-20)
 
 
