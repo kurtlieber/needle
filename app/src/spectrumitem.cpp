@@ -7,6 +7,7 @@ SpectrumItem::SpectrumItem(QQuickItem *parent) : QQuickPaintedItem(parent)
 {
     setAntialiasing(true);
     connect(this, &SpectrumItem::styleChanged, this, [this] { update(); });
+    connect(this, &QQuickPaintedItem::textureSizeChanged, this, [this] { update(); });
     m_lastSlowPaint.start();
 }
 
