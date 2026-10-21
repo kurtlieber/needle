@@ -104,7 +104,8 @@ a one-time step. Verdicts work before it.
 | `Q` | Quit |
 | `Enter` | Sign in to Spotify (when asked) |
 
-Choosing playlists (the Playlists tab, or `L`):
+Choosing playlists (the Playlists tab, or `L`; during a review, `L` or a click on the Playlists tab or the review's
+chip):
 
 | Key | Does |
 |---|---|

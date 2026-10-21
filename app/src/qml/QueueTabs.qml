@@ -1,7 +1,8 @@
 import QtQuick
 
 // The Review queues: Discoveries, Calibrate (when haystack offers it), Rate your likes, and Playlists (the picker,
-// or the Playlist review once one is started). Tab goes round them.
+// or the Playlist review once one is started; a click on it there goes back to the picker, as L does). Tab goes
+// round them.
 Rectangle {
     implicitWidth: row.implicitWidth + 8
     implicitHeight: 40
@@ -36,7 +37,16 @@ Rectangle {
                 color: tab.active ? theme.foreground : theme.lightForeground
             }
         }
-        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: review.queue = tab.name }
+        MouseArea {
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
+            onClicked: {
+                if (tab.active && tab.name === "playlists" && review.hasPlaylistReview && !playlists.pickerOpen)
+                    playlists.openPicker()
+                else
+                    review.queue = tab.name
+            }
+        }
         Accessible.role: Accessible.PageTab
         Accessible.name: tab.label + " " + tab.count
     }
