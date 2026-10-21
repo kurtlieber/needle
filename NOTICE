@@ -23,6 +23,12 @@ licenses:
 `cargo tree --manifest-path engine/Cargo.toml` lists every crate; each one's license is in its Cargo.toml.
 
 
+Followed, not bundled
+---------------------
+  Omacut         the theme watching in app/src/theme.cpp follows it (https://github.com/omacom-io/omacut).
+                 MIT, Copyright (c) David Heinemeier Hansson.
+
+
 Libraries from the system (linked at run time, not bundled)
 -----------------------------------------------------------
   Qt 6           LGPL-3.0 (qt6-base, qt6-declarative, qt6-wayland)
