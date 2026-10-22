@@ -135,6 +135,17 @@ QVariantMap ReviewQueue::card(const QString &id) const
     return i >= 0 ? m_cards[i].toMap() : QVariantMap{};
 }
 
+QStringList ReviewQueue::songIds(const QString &song) const
+{
+    QStringList out;
+    if (song.isEmpty())
+        return out;
+    for (const auto &v : m_cards)
+        if (v.toMap().value("song").toString() == song)
+            out << v.toMap().value("id").toString();
+    return out;
+}
+
 bool ReviewQueue::next()
 {
     const int i = m_cards.isEmpty() ? -1 : nextUnreviewed(m_current);

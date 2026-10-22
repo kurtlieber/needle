@@ -459,6 +459,71 @@ private slots:
         QVERIFY(!p2.shuffle());
     }
 
+    void aSongOnTwoReleasesIsReviewedOnce()
+    {
+        QTemporaryDir dir;
+        const QString cache = dir.path() + "/cache", state = dir.path() + "/state";
+        QFile tok(dir.path() + "/token");
+        QVERIFY(tok.open(QIODevice::WriteOnly));
+        tok.write("t");
+        tok.close();
+        QDir().mkpath(cache + "/playlists");
+        const auto save = [&](const QVariantMap &pl) {
+            QFile f(cache + "/playlists/" + pl.value("id").toString() + ".json");
+            QVERIFY(f.open(QIODevice::WriteOnly));
+            f.write(QJsonDocument::fromVariant(pl).toJson());
+        };
+        // b and b2 are one Song on two releases (the album and a best-of), d and d2 another; a has no ISRC
+        const auto release = [](const char *id, const char *song, const char *playlist) {
+            QVariantMap c = card(id);
+            if (*song)
+                c.insert("song", song);
+            c.insert("playlists", QStringList{pid(playlist)});
+            return c;
+        };
+        save({{"id", pid("bass")}, {"items", QVariantList{release("a", "", "bass"), release("b", "USAAA1900001", "bass")}}});
+        save({{"id", pid("dub")}, {"items", QVariantList{release("b2", "USAAA1900001", "dub"),
+                                                         release("d", "USAAA1900002", "dub"),
+                                                         release("d2", "USAAA1900002", "dub")}}});
+        const auto list = [](const char *id, const QStringList &tracks) {
+            return QVariantMap{{"id", pid(id)}, {"name", id}, {"cover", ""}, {"mine", true}, {"tracks", tracks},
+                               {"current", true}, {"reader", "server"}, {"snapshot_id", "s1"}};
+        };
+        // the one verdict is a Pass on d2, given to that release only
+        const QVariantMap playlists{{"items", QVariantList{list("bass", {"a", "b"}), list("dub", {"b2", "d", "d2"})}},
+                                    {"verdicts", QVariantMap{{"d2", QVariantMap{{"kind", "pass"}, {"given_at", "2026-10-01T00:00:00Z"}}}}}};
+        HaystackClient haystack({"http://127.0.0.1:1"}, dir.path() + "/token", cache, state);
+        Review r(&haystack, nullptr);
+        Playlists p(&haystack, nullptr, state);
+        connect(&p, &Playlists::sessionReady, &r, &Review::startPlaylistReview);
+        r.applyState({{"queues", QVariantMap{{"likes", QVariantMap{{"items", QVariantList{release("b2", "USAAA1900001", "dub")}}}}}}});
+        p.applyState({{"playlists", playlists}});
+        p.setShuffle(false);
+        p.pickAll();
+
+        QSignalSpy ready(&p, &Playlists::sessionReady);
+        p.start();
+        QVERIFY(ready.wait(5000));
+        QCOMPARE(r.playlistsTotal(), 2);             // a, and b for both releases of its song; d2's Pass counts for d
+        QCOMPARE(r.current().value("id").toString(), QString("a"));
+        r.rate(4, true);
+        QCOMPARE(r.current().value("id").toString(), QString("b"));
+        QCOMPARE(r.likesLeft(), 1);
+        r.rate(5, true);
+        QVERIFY(r.queueDone());
+        QCOMPARE(r.likesLeft(), 0);                  // the liked best-of has its verdict too
+        QCOMPARE(p.library().verdict("b2").value("stars").toInt(), 5);    // and the picker counts it at once
+        QCOMPARE(haystack.pendingVerdicts().last().toObject().value("track").toString(), QString("b"));
+
+        // played again with their verdicts, still once a song
+        p.setSkipVerdicts(false);
+        QSignalSpy again(&p, &Playlists::sessionReady);
+        p.start();
+        QVERIFY(again.wait(5000));
+        QCOMPARE(r.playlistsTotal(), 3);
+        QCOMPARE(r.current().value("id").toString(), QString("a"));
+    }
+
     void playlistLineSaysWhereASongComesFrom()
     {
         QVariantMap c{{"fromPlaylist", "All the Dubstep"}, {"reviewPlaylists", 3}, {"alsoOn", QStringList{"EDM"}},

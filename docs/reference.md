@@ -135,6 +135,9 @@ Media keys and the Omarchy bar work through MPRIS (`org.mpris.MediaPlayer2.needl
 * **Playlists.** The Playlists tab shows every playlist in your Spotify library but haystack's own Discoveries and
   To Rip, with how far each is reviewed. A review of the ones you pick plays their songs, each once, and survives a
   restart (`~/.local/state/needle/playlist-review.json`; the cards are saved in `~/.cache/needle/playlists/`).
+  From haystack 0.8.0 a card carries its `song` (feature `card.song`): the releases of one recording (the album
+  track, a remaster, a best-of) play once, and a verdict on any of them counts for all, in Rate your likes too
+  (haystack's ADR 0021). The picker still counts each release as a song.
   Spotify won't list a Followed playlist for haystack, so needle's engine reads its songs (one playlist at a time,
   while needle runs and is signed in to Spotify) and sends them to haystack (ADR 0008).
 * **Why a Discovery.** Under the title, the wide layout says which of your tracks it sounds like and where
