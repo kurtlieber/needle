@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.3](https://github.com/kurtlieber/needle/compare/v0.6.2...v0.6.3) (2026-10-22)
+
+
+### Bug Fixes
+
+* **playlists:** a song on two releases is reviewed once (haystack's ADR 0021) ([#21](https://github.com/kurtlieber/needle/issues/21)) ([426e019](https://github.com/kurtlieber/needle/commit/426e019325ba36a15e83edcbda487d1f78e51f2e))
+
 ## [0.6.2](https://github.com/kurtlieber/needle/compare/v0.6.1...v0.6.2) (2026-10-21)
 
 
