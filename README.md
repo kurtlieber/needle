@@ -20,7 +20,8 @@ next picks get better.
 - **Four things to review.** This week's **Discoveries** from haystack, **Calibrate** (a few songs haystack
   can't make up its mind about, where your rating teaches it the most), **Rate your likes** (the songs you've
   liked in Spotify but never rated), and any of your **Playlists**. A song comes up once, however many of them it's
-  on, and a rating on one of its albums (the original, a remaster, a best-of) counts for all of them.
+  on. In Rate your likes and your Playlists, a rating on one of its albums (the original, a remaster, a best-of)
+  counts for all of them, with haystack 0.8.0 or newer.
 - **See how it sounds.** Tempo, valence (sad to happy), energy, danceability, acousticness, instrumentalness and
   loudness, each shown against your own baseline: "slower, darker and more instrumental than what you usually
   like".
