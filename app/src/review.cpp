@@ -236,10 +236,17 @@ void Review::give(const QString &kind, int stars, bool advance)
         v.insert("stars", stars);
         local.insert("stars", stars);
     }
-    // the same track can sit in more than one queue (a liked discovery); the others move past it
+    // the same track can sit in more than one queue (a liked discovery); the others move past it. In Rate your likes
+    // and a Playlist review it counts for every release of the song too, as haystack has it (its ADR 0021);
+    // Discoveries and Calibrate go by the track
+    const QString song = q().current().value("song").toString();
     for (auto *queue : {&m_discoveries, &m_calibrate, &m_likes, &m_playlists}) {
-        queue->applyVerdict(id, local);
-        if (queue != &q() && queue->currentId() == id && queue->currentReviewed())
+        QStringList ids{id};
+        if (queue == &m_likes || queue == &m_playlists)
+            ids << queue->songIds(song);
+        for (const auto &t : std::as_const(ids))
+            queue->applyVerdict(t, local);
+        if (queue != &q() && ids.contains(queue->currentId()) && queue->currentReviewed())
             queue->next();
     }
     if (m_haystack)

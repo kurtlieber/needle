@@ -519,16 +519,47 @@ static void addCards(QHash<QString, QVariantMap> &byId, QStringList *order, cons
     }
 }
 
+// A card's Song: the recording, the same on every release of it (the album track, its remaster, a best-of), from the
+// `song` haystack 0.8.0 sends (haystack's ADR 0021). A card without one is a Song of its own.
+static QString songOf(const QVariantMap &card)
+{
+    const QString s = card.value("song").toString();
+    return s.isEmpty() ? card.value("id").toString() : s;
+}
+
+// Song -> the ids of its releases among these cards.
+static QHash<QString, QStringList> releases(const QHash<QString, QVariantMap> &cards)
+{
+    QHash<QString, QStringList> out;
+    for (auto it = cards.cbegin(); it != cards.cend(); ++it)
+        out[songOf(*it)] << it.key();
+    return out;
+}
+
 void Playlists::finishStart()
 {
     QHash<QString, QVariantMap> byId;
     QStringList songs;
     for (const auto &id : std::as_const(m_starts))
         addCards(byId, &songs, id, m_fetched.value(id).value("items").toList());
-    if (m_skip)
-        songs.erase(std::remove_if(songs.begin(), songs.end(), [&](const QString &t) {
-                        return !byId.value(t).value("verdict").toMap().isEmpty() || m_library.hasVerdict(t);
-                    }), songs.end());
+    // each song once, however many releases of it the playlists hold: the first one stands for them all, and is
+    // skipped when any of them has a verdict
+    const auto rel = releases(byId);
+    const auto judged = [&](const QString &t) {
+        return !byId.value(t).value("verdict").toMap().isEmpty() || m_library.hasVerdict(t);
+    };
+    QStringList once;
+    QSet<QString> seen;
+    for (const auto &t : std::as_const(songs)) {
+        const QString song = songOf(byId.value(t));
+        if (seen.contains(song))
+            continue;
+        seen.insert(song);
+        const QStringList all = rel.value(song);
+        if (!m_skip || std::none_of(all.cbegin(), all.cend(), judged))
+            once << t;
+    }
+    songs = once;
     m_starting = false;
     if (songs.isEmpty()) {
         m_notice = QStringLiteral("Every song there has a verdict already. Turn off Skip songs with a verdict to hear them again.");
@@ -561,13 +592,16 @@ QVariantList Playlists::sessionCards() const
     for (auto it = m_fetched.cbegin(); it != m_fetched.cend(); ++it)
         if (!names.contains(it.key()))
             names.insert(it.key(), it.value().value("name").toString());
-    // the saved cards are as old as the review: the verdicts given since are in the snapshot (or still on their way)
+    // the saved cards are as old as the review: the verdicts given since are in the snapshot (or still on their way),
+    // on any release of the song
     QHash<QString, QVariantMap> cards = m_cards;
-    for (auto it = cards.begin(); it != cards.end(); ++it) {
-        const auto v = m_library.verdict(it.key());
-        if (!v.isEmpty() && v.value("given_at").toString() >= it->value("verdict").toMap().value("given_at").toString())
-            it->insert("verdict", v);
-    }
+    const auto rel = releases(m_cards);
+    for (auto it = cards.begin(); it != cards.end(); ++it)
+        for (const auto &t : rel.value(songOf(*it))) {
+            const auto v = m_library.verdict(t);
+            if (!v.isEmpty() && v.value("given_at").toString() >= it->value("verdict").toMap().value("given_at").toString())
+                it->insert("verdict", v);
+        }
     return m_session.cards(cards, names);
 }
 
@@ -614,14 +648,23 @@ void Playlists::verdictAdded(const QJsonObject &v)
     QVariantMap verdict{{"kind", v.value("kind").toString()}, {"given_at", v.value("given_at").toString()}};
     if (v.contains("stars"))
         verdict.insert("stars", v.value("stars").toInt());
-    m_library.applyVerdict(track, verdict);
+    // it counts for every release of the song here too, as haystack's next snapshot has it
+    QStringList ids{track};
     if (m_cards.contains(track))
-        m_cards[track].insert("verdict", verdict);
-    if (!m_session.isEmpty() && !m_session.skipVerdicts && m_session.tracks.contains(track)
-        && !m_session.done.contains(track)) {
-        m_session.done << track;
-        save();
+        ids = releases(m_cards).value(songOf(m_cards.value(track)));
+    bool done = false;
+    for (const auto &t : std::as_const(ids)) {
+        m_library.applyVerdict(t, verdict);
+        if (m_cards.contains(t))
+            m_cards[t].insert("verdict", verdict);
+        if (!m_session.isEmpty() && !m_session.skipVerdicts && m_session.tracks.contains(t)
+            && !m_session.done.contains(t)) {
+            m_session.done << t;
+            done = true;
+        }
     }
+    if (done)
+        save();
     m_model.refresh();
     emit changed();
     emit currentChanged();

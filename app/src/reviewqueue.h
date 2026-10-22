@@ -36,6 +36,8 @@ public:
     QVariantMap upNext() const;
     QVariantList lookahead(int n) const;
     QVariantMap card(const QString &id) const;
+    // The ids of the cards of this Song (their `song`, haystack's ADR 0021): the releases of one recording.
+    QStringList songIds(const QString &song) const;
 
     // -> false when no other track without a verdict is left (the current one is then left as it is)
     bool next();
