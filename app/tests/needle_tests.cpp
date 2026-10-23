@@ -592,6 +592,73 @@ private slots:
         QCOMPARE(r.current().value("id").toString(), QString("a"));
     }
 
+    void aSavedReviewListingBothReleasesCountsARatingOnEither()
+    {
+        QTemporaryDir dir;
+        const QString cache = dir.path() + "/cache", state = dir.path() + "/state";
+        QDir().mkpath(cache + "/playlists");
+        QDir().mkpath(state);
+        const auto write = [](const QString &path, const QJsonObject &o) {
+            QFile f(path);
+            QVERIFY(f.open(QIODevice::WriteOnly));
+            f.write(QJsonDocument(o).toJson());
+        };
+        const auto release = [](const char *id, const char *song, const char *playlist) {
+            QJsonObject c{{"id", id}, {"title", QString("Song ") + id}, {"playlists", QJsonArray{pid(playlist)}}};
+            if (*song)
+                c.insert("song", song);
+            return c;
+        };
+        write(cache + "/playlists/" + pid("bass") + ".json",
+              {{"id", pid("bass")}, {"items", QJsonArray{release("a", "", "bass"), release("b", "USAAA1900001", "bass")}}});
+        write(cache + "/playlists/" + pid("dub") + ".json",
+              {{"id", pid("dub")}, {"items", QJsonArray{release("b2", "USAAA1900001", "dub")}}});
+        // an older needle saved this review: it listed b and b2, two releases of one song
+        write(state + "/playlist-review.json",
+              {{"session", QJsonObject{{"playlists", QJsonArray{pid("bass"), pid("dub")}}, {"skip_verdicts", true},
+                                       {"shuffle", false}, {"seed", "1"}, {"tracks", QJsonArray{"a", "b", "b2"}},
+                                       {"done", QJsonArray{}}, {"started_at", "2026-10-01T00:00:00Z"}}}});
+        HaystackClient haystack({"http://127.0.0.1:1"}, dir.path() + "/no-token", cache, state);
+        Review r(&haystack, nullptr);
+        Playlists p(&haystack, nullptr, state);
+        connect(&p, &Playlists::sessionReady, &r, &Review::startPlaylistReview);
+        const auto list = [](const char *id, const QStringList &tracks) {
+            return QVariantMap{{"id", pid(id)}, {"name", id}, {"cover", ""}, {"mine", true}, {"tracks", tracks},
+                               {"current", true}, {"reader", "server"}, {"snapshot_id", "s1"}};
+        };
+        // since then b was rated on another computer: the snapshot has it on b only
+        p.applyState({{"playlists", QVariantMap{
+            {"items", QVariantList{list("bass", {"a", "b"}), list("dub", {"b2"})}},
+            {"verdicts", QVariantMap{{"b", QVariantMap{{"kind", "rating"}, {"stars", 4},
+                                                        {"given_at", "2026-10-02T00:00:00Z"}}}}}}}});
+        p.restore();
+        QCOMPARE(r.playlistsTotal(), 3);             // the saved review keeps its songs
+        QCOMPARE(r.playlistsLeft(), 1);              // a: b2 counts b's rating
+    }
+
+    void aRatingInAnyQueueCountsForALikedReleaseOfTheSong()
+    {
+        // haystack's Rate your likes goes by the Song whichever queue the verdict came from, and so does needle
+        QTemporaryDir dir;
+        HaystackClient haystack({"http://127.0.0.1:1"}, dir.path() + "/no-token", dir.path() + "/cache",
+                                dir.path() + "/state");
+        Review r(&haystack, nullptr);
+        QVariantMap found = card("x"), liked = card("x2");
+        found.insert("song", "USAAA1900003");
+        liked.insert("song", "USAAA1900003");
+        r.applyState({{"queues", QVariantMap{
+            {"discoveries", QVariantMap{{"items", QVariantList{found, card("y")}}}},
+            {"likes", QVariantMap{{"items", QVariantList{liked, card("l1")}}}}}}});
+        QCOMPARE(r.queue(), QString("discoveries"));
+        QCOMPARE(r.likesLeft(), 2);
+        r.rate(4, true);
+        QCOMPARE(r.current().value("id").toString(), QString("y"));
+        QCOMPARE(r.likesLeft(), 1);                  // x2, the liked release of x, has its verdict
+        r.switchQueue();
+        QCOMPARE(r.queue(), QString("likes"));
+        QCOMPARE(r.current().value("id").toString(), QString("l1"));
+    }
+
     void playlistLineSaysWhereASongComesFrom()
     {
         QVariantMap c{{"fromPlaylist", "All the Dubstep"}, {"reviewPlaylists", 3}, {"alsoOn", QStringList{"EDM"}},
