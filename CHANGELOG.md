@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/kurtlieber/needle/compare/v0.6.3...v0.7.0) (2026-10-23)
+
+
+### Features
+
+* flag a possible cover and swap it for its original ([#24](https://github.com/kurtlieber/needle/issues/24)) ([e091ed1](https://github.com/kurtlieber/needle/commit/e091ed19cdd4ff3ef4ff45eae8f318b69e5e7a42))
+
 ## [0.6.3](https://github.com/kurtlieber/needle/compare/v0.6.2...v0.6.3) (2026-10-22)
 
 
