@@ -11,6 +11,7 @@
         <file alias="Main.qml">qml/Main.qml</file>
         <file alias="MiniTraitRow.qml">qml/MiniTraitRow.qml</file>
         <file alias="NeedleMarker.qml">qml/NeedleMarker.qml</file>
+        <file alias="OriginalBadge.qml">qml/OriginalBadge.qml</file>
         <file alias="Notice.qml">qml/Notice.qml</file>
         <file alias="PlaybackNotice.qml">qml/PlaybackNotice.qml</file>
         <file alias="PlaylistChip.qml">qml/PlaylistChip.qml</file>

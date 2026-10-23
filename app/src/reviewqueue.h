@@ -15,14 +15,17 @@
 class ReviewQueue {
 public:
     // Replace the cards (a fresh /v1/state). The current track stays current if it is still in the queue, or if
-    // it has its verdict now (haystack leaves rated tracks out of Rate your likes) until Next. A current track with
-    // its verdict keeps the same track up next.
+    // it has its verdict now (haystack leaves rated tracks out of Rate your likes) or is an Original swapped in for
+    // a cover (swappedFrom) until Next. A current track with its verdict keeps the same track up next.
     void setCards(const QVariantList &cards);
     // Start over with these cards: no history, the first one not reviewed is current.
     void reset(const QVariantList &cards, bool revisit = false, const QStringList &done = {});
     void applyVerdict(const QString &id, const QVariantMap &verdict);
     // Newer details for a card already here (its Readings, say); the fields it doesn't carry are kept.
     bool updateCard(const QVariantMap &card);
+    // A Swap: the card takes the place of track id, or, when it is in the queue already, the track just leaves and
+    // the card is current if the track was. -> false when the track isn't here.
+    bool replaceCard(const QString &id, const QVariantMap &card);
 
     int size() const { return m_cards.size(); }
     int reviewed() const;

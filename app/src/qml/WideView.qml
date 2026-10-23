@@ -180,9 +180,18 @@ Item {
             color: theme.lightForeground
         }
 
+        OriginalBadge {
+            id: badge
+            y: (why.visible ? why.y + why.height : head.y + head.height) + 14
+            width: Math.min(parent.width - (upnext.visible && y < upnext.height ? upnext.width + 24 : 0), 640)
+            height: implicitHeight
+            card: v.card
+            onSwap: review.swap()
+        }
+
         Flow {
             id: chips
-            y: (why.visible ? why.y + why.height : head.y + head.height) + 14
+            y: (badge.visible ? badge.y + badge.height : why.visible ? why.y + why.height : head.y + head.height) + 14
             width: parent.width - (upnext.visible && y < upnext.height ? upnext.width + 24 : 0)
             spacing: 8
             Chip {

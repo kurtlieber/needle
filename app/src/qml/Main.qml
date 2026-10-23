@@ -122,6 +122,7 @@ ApplicationWindow {
                 switch (e.key) {
                 case Qt.Key_P: review.pass(); break
                 case Qt.Key_X: review.dislike(); break
+                case Qt.Key_S: review.swap(); break
                 case Qt.Key_Space: engine.toggle(); break
                 case Qt.Key_Left: engine.seekBy(-10000); break
                 case Qt.Key_Right: engine.seekBy(10000); break

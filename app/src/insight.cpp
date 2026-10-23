@@ -190,6 +190,34 @@ QString Insight::playlistLine(const QVariantMap &card, const QString &strongColo
     return out;
 }
 
+QString Insight::original(const QVariantMap &card, const QString &strongColor, const QStringList &features)
+{
+    const auto o = card.value("original").toMap();
+    const QString title = o.value("title").toString();
+    if (!features.contains("card.original") || title.isEmpty())
+        return {};
+    const QString reason = o.value("reason").toString();
+    const QString artist = o.value("artist").toString();
+    const QString song = QStringLiteral("<b><font color=\"%1\">%2</font></b>").arg(strongColor, title.toHtmlEscaped());
+    QString out;
+    if (reason == "live") {
+        out = QStringLiteral("A live version of %1, not the studio recording.").arg(song);
+    } else {
+        out = QStringLiteral("Possible cover of %1").arg(song);
+        if (!artist.isEmpty())
+            out += QStringLiteral(" by %1").arg(artist.toHtmlEscaped());
+        if (reason == "isrc")
+            out += QStringLiteral(": its ISRC belongs to their recording.");
+        else if (reason == "rank")
+            out += QStringLiteral(", whose recording is far more popular.");
+        else
+            out += QStringLiteral(": the title or artist says so.");
+    }
+    if (o.value("id").toString().isEmpty())
+        out += QStringLiteral(" haystack couldn’t find the Original on Spotify.");
+    return out;
+}
+
 QString Insight::time(qint64 ms)
 {
     if (ms < 0)

@@ -12,7 +12,7 @@
 class QNetworkReply;
 
 // needle's side of haystack's HTTP API (haystack's docs/api.md, ADR 0004 and ADR 0006): one snapshot of the Review state,
-// cached on disk so Review works offline, and an outbox of verdicts and plays flushed whenever haystack answers.
+// cached on disk so Review works offline, and an outbox of verdicts, plays and Swaps flushed whenever haystack answers.
 // Tries the servers in the order given (Config), the next one when one doesn't answer. A Playlist review fetches
 // each picked playlist's cards once, and keeps them too.
 class HaystackClient : public QObject {
@@ -34,9 +34,13 @@ public:
     QString tokenFile() const;
     QVariantMap cachedState() const { return m_state; }
     QJsonArray pendingVerdicts() const { return m_outbox.verdicts(); }
+    QJsonArray pendingSwaps() const { return m_outbox.swaps(); }
 
     void addVerdict(const QJsonObject &v);
     void addPlay(const QJsonObject &p);
+    // A Swap (haystack's ADR 0022): sent after the verdicts and plays, so a verdict given before it reaches haystack
+    // first and is taken back with the cover's others. It waits while haystack doesn't list the feature swaps.
+    void addSwap(const QJsonObject &s);
 
     // A local file for a cover if it was fetched before, else the URL itself (and fetch it for next time).
     Q_INVOKABLE QString cover(const QString &url);
@@ -58,6 +62,7 @@ signals:
     void stateArrived(const QVariantMap &state);
     void statusChanged();
     void verdictAdded(const QJsonObject &verdict);
+    void swapAdded(const QJsonObject &swap);
     void playlistArrived(const QString &id, const QVariantMap &playlist);
     void playlistFailed(const QString &id, int httpStatus);
     // httpStatus: 200 stored, 0 no answer (worth another try), anything else refused

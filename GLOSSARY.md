@@ -1,6 +1,6 @@
 # needle
 
-The desktop app for Review, a client of haystack (the server). It speaks haystack's language ([haystack's glossary](https://github.com/kurtlieber/haystack/blob/main/GLOSSARY.md): Verdict, Rating, Pass, Dislike, Liked Songs, Unrated like, Song, Trait, Reading, Baseline, Usual range, Review, Review queue, Followed playlist, Discoveries, Calibrate, Soft no, To Rip, Confidence) and adds the terms below.
+The desktop app for Review, a client of haystack (the server). It speaks haystack's language ([haystack's glossary](https://github.com/kurtlieber/haystack/blob/main/GLOSSARY.md): Verdict, Rating, Pass, Dislike, Liked Songs, Unrated like, Song, Trait, Reading, Baseline, Usual range, Review, Review queue, Followed playlist, Discoveries, Calibrate, Soft no, To Rip, Confidence, Possible cover, Original, Swap) and adds the terms below.
 
 ## Language
 

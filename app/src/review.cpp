@@ -16,8 +16,9 @@ Review::Review(HaystackClient *haystack, EngineClient *engine, QObject *parent)
     m_measureRefresh.setInterval(20000);
     if (m_haystack) {
         connect(&m_measureRefresh, &QTimer::timeout, this, [this] {
-            // a Playlist review's cards aren't in the snapshot: ask for the one on screen, for two minutes at most
-            if (m_queue != "playlists")
+            // a Playlist review's cards, an Original swapped in and a cover check aren't in the snapshot: ask for the
+            // one on screen, for two minutes at most
+            if (waitsOnSnapshot())
                 m_haystack->refresh();
             else if (++m_measureChecks <= 20)
                 m_haystack->fetchTrack(q().currentId());
@@ -66,6 +67,13 @@ void Review::applyState(const QVariantMap &state)
     QVariantList calibrate = features.contains("queue.calibrate")
                                  ? queues.value("calibrate").toMap().value("items").toList() : QVariantList{};
     QVariantList likes = queues.value("likes").toMap().value("items").toList();
+    // a cover whose Swap haystack hasn't got yet stays out, as it will once haystack has it
+    if (m_haystack) {
+        QSet<QString> swapped;
+        for (const auto &s : m_haystack->pendingSwaps())
+            swapped.insert(s.toObject().value("track").toString());
+        likes.removeIf([&](const QVariant &c) { return swapped.contains(c.toMap().value("id").toString()); });
+    }
     // verdicts haystack hasn't got yet still count here
     QHash<QString, QVariantMap> pending;
     if (m_haystack)
@@ -215,12 +223,52 @@ void Review::startPlaylistReview(const QVariantList &cards, bool revisit, const 
 void Review::updateCard(const QVariantMap &card)
 {
     const QString id = card.value("id").toString();
-    if (!m_playlists.updateCard(card))
-        return;
-    if (m_queue == "playlists" && q().currentId() == id) {
+    bool here = false;
+    for (auto *queue : {&m_discoveries, &m_calibrate, &m_likes, &m_playlists})
+        if (queue->updateCard(card) && queue == &q())
+            here = true;
+    if (here && q().currentId() == id) {
         emit changed();
         measureSoon();
     }
+}
+
+bool Review::canSwap() const
+{
+    return m_haystack && (m_queue == "likes" || m_queue == "playlists") && m_features.contains("card.original")
+           && m_features.contains("swaps") && !q().current().value("original").toMap().value("id").toString().isEmpty();
+}
+
+void Review::swap()
+{
+    if (!canSwap())
+        return;
+    const auto cover = q().current();
+    const QString id = cover.value("id").toString();
+    const auto o = cover.value("original").toMap();
+    const QString original = o.value("id").toString();
+    m_haystack->addSwap({{"id", QUuid::createUuid().toString(QUuid::WithoutBraces)}, {"track", id},
+                         {"original", original},
+                         {"given_at", QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs)}});
+    // until haystack sends the Original's card: its title and artist, and the cover's place in each queue
+    const QString artist = o.value("artist").toString();
+    const auto stub = [&](const QVariantMap &c) {
+        QVariantMap s{{"id", original}, {"title", o.value("title")},
+                      {"artists", artist.isEmpty() ? QStringList{} : QStringList{artist}}, {"measure", "unknown"},
+                      {"original_check", "done"}, {"original", QVariant()}, {"swappedFrom", id}};
+        for (const char *k : {"fromPlaylist", "alsoOn", "reviewPlaylists", "playlists"})
+            if (c.contains(k))
+                s.insert(k, c.value(k));
+        return s;
+    };
+    leaveTrack(false);
+    for (auto *queue : {&m_likes, &m_playlists})
+        queue->replaceCard(id, stub(queue->card(id)));
+    emit changed();
+    loadCurrent(true);
+    prefetch();
+    m_haystack->fetchTrack(original);
+    measureSoon();
 }
 
 void Review::give(const QString &kind, int stars, bool advance)
@@ -330,13 +378,30 @@ void Review::prefetch()
     m_haystack->prefetchCovers(urls);
 }
 
+static bool unmeasured(const QVariantMap &c)
+{
+    const QString m = c.value("measure").toString();
+    return m == "pending" || m == "unknown";
+}
+
+// still to come from haystack: the card's Readings, or its check for a possible cover (feature card.original)
+bool Review::waiting(const QVariantMap &c) const
+{
+    const QString check = c.value("original_check").toString();
+    return unmeasured(c) || (m_features.contains("card.original") && (check == "pending" || check == "unknown"));
+}
+
+// the snapshot brings the current card's Readings: it is in a queue the snapshot carries, and not an Original
+// swapped in
+bool Review::waitsOnSnapshot() const
+{
+    return m_queue != "playlists" && unmeasured(q().current()) && !q().current().contains("swappedFrom");
+}
+
 void Review::measureSoon()
 {
-    // haystack measures tracks without Readings on demand: look again shortly while one is on screen
-    const auto unmeasured = [](const QVariantMap &c) {
-        const QString m = c.value("measure").toString();
-        return m == "pending" || m == "unknown";
-    };
+    // haystack measures tracks without Readings, and checks them for a possible cover, on demand: look again shortly
+    // while one is on screen
     if (m_queue == "playlists" && m_haystack) {
         // the snapshot doesn't carry these cards, so ask for the songs coming up: haystack measures them in turn
         QVariantList soon{q().current()};
@@ -344,15 +409,15 @@ void Review::measureSoon()
         for (const auto &v : std::as_const(soon)) {
             const auto c = v.toMap();
             const QString id = c.value("id").toString();
-            if (!id.isEmpty() && unmeasured(c) && !m_measureAsked.contains(id)) {
+            if (!id.isEmpty() && waiting(c) && !m_measureAsked.contains(id)) {
                 m_measureAsked.insert(id);
                 m_haystack->fetchTrack(id);
             }
         }
     }
-    if (unmeasured(q().current())) {
+    if (waiting(q().current())) {
         // one card is cheap to ask for again; the whole snapshot isn't
-        m_measureRefresh.setInterval(m_queue == "playlists" ? 6000 : 20000);
+        m_measureRefresh.setInterval(waitsOnSnapshot() ? 20000 : 6000);
         m_measureRefresh.start();
     }
 }
