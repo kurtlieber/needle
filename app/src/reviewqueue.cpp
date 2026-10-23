@@ -43,7 +43,8 @@ void ReviewQueue::setCards(const QVariantList &cards)
     m_cards = cards;
     m_current = keep.isEmpty() ? -1 : indexOf(keep);
     // haystack drops a rated track from Rate your likes, but it may still be playing: keep it until moving on
-    if (!keep.isEmpty() && m_current < 0 && !keepCard.value("verdict").toMap().isEmpty()) {
+    if (!keep.isEmpty() && m_current < 0
+        && (!keepCard.value("verdict").toMap().isEmpty() || keepCard.contains("swappedFrom"))) {
         m_cards.prepend(keepCard);
         m_current = 0;
     }
@@ -88,6 +89,29 @@ bool ReviewQueue::updateCard(const QVariantMap &card)
     if (!mine.isEmpty() && mine.value("given_at").toString() > c.value("verdict").toMap().value("given_at").toString())
         c.insert("verdict", mine);
     m_cards[i] = c;
+    return true;
+}
+
+bool ReviewQueue::replaceCard(const QString &id, const QVariantMap &card)
+{
+    const int i = indexOf(id);
+    if (i < 0)
+        return false;
+    const QString with = card.value("id").toString();
+    const int j = indexOf(with);
+    if (j >= 0) {
+        m_cards.removeAt(i);
+        if (m_current == i)
+            m_current = j > i ? j - 1 : j;
+        else if (m_current > i)
+            --m_current;
+    } else {
+        m_cards[i] = card;
+    }
+    for (auto &h : m_history)
+        if (h == id)
+            h = with;
+    m_done.remove(id);
     return true;
 }
 

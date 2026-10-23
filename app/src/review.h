@@ -40,6 +40,7 @@ class Review : public QObject {
     Q_PROPERTY(QStringList features READ features NOTIFY changed)
     Q_PROPERTY(QString tabNext READ tabNext NOTIFY changed)
     Q_PROPERTY(QString doneNext READ doneNext NOTIFY changed)
+    Q_PROPERTY(bool canSwap READ canSwap NOTIFY changed)
 
 public:
     Review(HaystackClient *haystack, EngineClient *engine, QObject *parent = nullptr);
@@ -74,6 +75,10 @@ public:
     // left to review, or "" when none has.
     QString tabNext() const;
     QString doneNext() const;
+    // haystack 0.9.0 on (features card.original and swaps): the current track is a Possible cover with its Original
+    // found on Spotify, in Rate your likes or a Playlist review. Discoveries and Calibrate are passed or rated as
+    // they are (haystack's ADR 0022).
+    bool canSwap() const;
 
     // For tests and the clock: the snapshot handling without the network.
     void applyState(const QVariantMap &state);
@@ -89,6 +94,9 @@ public slots:
     // A Playlist review starts (activate: switch to it and play) or comes back after a restart.
     void startPlaylistReview(const QVariantList &cards, bool revisit, const QStringList &done, bool activate);
     void updateCard(const QVariantMap &card);
+    // Swap the current Possible cover for its Original: haystack puts the Original in its place in the listener's
+    // playlists, and here it takes the cover's place and plays. Nothing without canSwap.
+    void swap();
 
 signals:
     void changed();
@@ -115,6 +123,8 @@ private:
     void leaveTrack(bool completed);
     void prefetch();
     void measureSoon();
+    bool waiting(const QVariantMap &card) const;
+    bool waitsOnSnapshot() const;
 
     HaystackClient *m_haystack;
     EngineClient *m_engine;
@@ -130,5 +140,5 @@ private:
     qint64 m_maxPosition = 0;
     QTimer m_measureRefresh;
     QSet<QString> m_measureAsked;      // playlist songs haystack was asked to measure
-    int m_measureChecks = 0;           // asks for the current one's Readings so far
+    int m_measureChecks = 0;           // asks for the current one's Readings or cover check so far
 };

@@ -5,7 +5,7 @@
 #include <QString>
 #include <QStringList>
 
-// Verdicts and plays waiting for haystack (ADR 0004, ADR 0006). Persisted at every change, atomically, so a
+// Verdicts, plays and Swaps waiting for haystack (ADR 0004, ADR 0006, ADR 0022). Persisted at every change, atomically, so a
 // verdict given offline, or right before a crash, is never lost; haystack ignores replays by id.
 class Outbox {
 public:
@@ -13,19 +13,21 @@ public:
 
     void addVerdict(const QJsonObject &v);
     void addPlay(const QJsonObject &p);
+    void addSwap(const QJsonObject &s);
     // Drop what haystack answered for (accepted, or rejected as malformed: retrying can't fix those).
     void settle(const QStringList &ids);
 
     QJsonArray verdicts() const { return m_verdicts; }
     QJsonArray plays() const { return m_plays; }
+    QJsonArray swaps() const { return m_swaps; }
     int pendingVerdicts() const { return m_verdicts.size(); }
-    int size() const { return m_verdicts.size() + m_plays.size(); }
+    int size() const { return m_verdicts.size() + m_plays.size() + m_swaps.size(); }
     QString error() const { return m_error; }
 
 private:
     void save();
 
     QString m_path;
-    QJsonArray m_verdicts, m_plays;
+    QJsonArray m_verdicts, m_plays, m_swaps;
     QString m_error;
 };

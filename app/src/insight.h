@@ -53,6 +53,12 @@ public:
     // A Playlist review's song: "From <b>All the Dubstep</b>, one of the 3 playlists in this review. It's also on
     // <b>EDM</b>. It's in your Liked Songs." (rich text, escaped); "" for a card from another queue.
     Q_INVOKABLE static QString playlistLine(const QVariantMap &card, const QString &strongColor);
+    // A Possible cover (haystack's ADR 0022, feature card.original): "Possible cover of <b>Zombie</b> by The
+    // Cranberries: the title or artist says so." / "…: its ISRC belongs to their recording." / "…, whose recording is
+    // far more popular." / "A live version of <b>Zombie</b>, not the studio recording." (rich text, escaped), then
+    // "haystack couldn’t find the Original on Spotify." when it has no id; "" without the feature or an Original.
+    Q_INVOKABLE static QString original(const QVariantMap &card, const QString &strongColor,
+                                        const QStringList &features);
     Q_INVOKABLE static QString time(qint64 ms);
 
     QVariantList traitList() const;

@@ -91,6 +91,7 @@ a one-time step. Verdicts work before it.
 | `Shift` + `1`–`5` | Rate and play the next track |
 | `P` | Pass (moves on) |
 | `X` | Dislike (moves on) |
+| `S` | Swap a Possible cover for its Original (Rate your likes and Playlists, haystack 0.9.0 and later) |
 | `Space` | Play or pause |
 | `←` / `→` | Back or ahead 10 s |
 | `J` | Jump ahead 30 s |
@@ -125,8 +126,8 @@ Media keys and the Omarchy bar work through MPRIS (`org.mpris.MediaPlayer2.needl
 ## How it behaves
 
 * **Offline.** needle caches haystack's last snapshot (`~/.cache/needle/state.json`) and the covers of the next
-  tracks (`~/.cache/needle/covers/`), and keeps an outbox of verdicts and plays
-  (`~/.local/state/needle/outbox.json`) until haystack accepts them. The status line says how many wait.
+  tracks (`~/.cache/needle/covers/`), and keeps an outbox of verdicts, plays and Swaps
+  (`~/.local/state/needle/outbox.json`) until haystack accepts them. The status line says how many verdicts wait.
 * **Servers.** The ones in `config.toml`, in order: when one doesn't answer needle tries the next, once round,
   then shows Offline and tries again every 30 s.
 * **Plays.** A track left after 5 s or more, or played to the end, is reported to haystack with how long it
@@ -152,6 +153,21 @@ Media keys and the Omarchy bar work through MPRIS (`org.mpris.MediaPlayer2.needl
   with the queue `calibrate`. The line under the title says why haystack is unsure ("haystack isn’t sure about
   this one: the re-ranker gives it even odds") and which of your tracks the song sounds most like. Against an
   older haystack there is no tab (ADR 0014).
+* **Possible covers.** From haystack 0.9.0 (feature `card.original`) a card may name its Original, the recording
+  it may stand in for (haystack's ADR 0022). A badge under the title says so and why: "Possible cover of Zombie by
+  The Cranberries: the title or artist says so", "…: its ISRC belongs to their recording", "…, whose recording is
+  far more popular", or "A live version of Zombie, not the studio recording". It adds when haystack couldn't find
+  the Original on Spotify. It is a hint, never a verdict: a song that shares its title with a bigger hit gets one
+  too, pointing at the wrong song. haystack checks each track once, in the background; while a card's check is
+  pending, needle fetches the card again every 6 s, up to 20 times, and the badge appears when the answer does.
+  In Rate your likes and a Playlist review, where the songs are already yours, the badge has a button, and `S`
+  does the same (feature `swaps` too, and an Original haystack found on Spotify): the Original takes the cover's
+  place in the queue and plays at once, and needle sends a Swap. haystack takes back the cover's verdicts and puts
+  the Original where the cover was in your own playlists and Liked Songs. A Swap waits in the outbox like a verdict,
+  and an older haystack that doesn't list `swaps` keeps it there until it does. A Swap can't be undone from needle.
+  Discoveries and Calibrate show the badge without the button: pass or dislike a cover there. After a restart, a
+  Playlist review leaves out an Original it swapped in until you start that review again, since its saved cards
+  still hold the cover.
 * **Theme.** Every colour is an Omarchy theme token, followed live (`~/.local/state/omarchy/current/theme`).
   The cover glow is the cover's own pixels, blurred.
 * **Reduced motion.** The desktop's `enable-animations` (settings portal), or `M`: the beat pulse stands still

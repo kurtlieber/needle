@@ -26,6 +26,9 @@ next picks get better.
   like".
 - **Rate without stopping.** `1`–`5` rates the song, `Shift` + a number rates it and moves on, `P` passes, `X`
   dislikes. The music keeps playing while you decide.
+- **Catch the covers.** A song that may be a cover, a karaoke or tribute version or a live take says which
+  song it stands in for. In Rate your likes and your playlists, `S` swaps it for the original: haystack takes back
+  the cover's rating and puts the original in its place in your playlists and Liked Songs.
 - **Works offline.** Ratings wait on your computer until haystack is reachable again.
 - **Fits your desktop.** Follows your Omarchy theme, works with media keys and the Omarchy bar, and respects
   reduced motion.
@@ -125,6 +128,7 @@ server's firewall allows port 8517. More settings: [docs/reference.md, "Settings
 | `1`–`5` | Rate (the song keeps playing) |
 | `Shift` + `1`–`5` | Rate and play the next song |
 | `P` / `X` | Pass / Dislike (moves on) |
+| `S` | Swap a possible cover for the original (Rate your likes, Playlists) |
 | `Space` | Play or pause |
 | `N` / `B` | Next song / back to the previous one (to change your rating) |
 | `Tab` | Switch between Discoveries, Calibrate, Rate your likes and Playlists |

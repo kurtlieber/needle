@@ -66,6 +66,15 @@ Item {
             }
         }
 
+        OriginalBadge {
+            Layout.topMargin: 14
+            Layout.fillWidth: true
+            Layout.preferredHeight: implicitHeight
+            compact: true
+            card: v.card
+            onSwap: review.swap()
+        }
+
         RowLayout {
             Layout.topMargin: 18
             spacing: 14

@@ -136,6 +136,7 @@ private:
     void rebuildModel(bool keepCurrent = true);
     QStringList ordered(const QStringList &ids) const;
     void verdictAdded(const QJsonObject &v);
+    void swapAdded(const QJsonObject &s);
     void finishStart();
     QVariantList sessionCards() const;
     void readNext();

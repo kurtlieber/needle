@@ -80,6 +80,7 @@ Playlists::Playlists(HaystackClient *haystack, EngineClient *engine, const QStri
     if (m_haystack) {
         connect(m_haystack, &HaystackClient::stateArrived, this, &Playlists::applyState);
         connect(m_haystack, &HaystackClient::verdictAdded, this, &Playlists::verdictAdded);
+        connect(m_haystack, &HaystackClient::swapAdded, this, &Playlists::swapAdded);
         connect(m_haystack, &HaystackClient::playlistArrived, this, &Playlists::playlistArrived);
         connect(m_haystack, &HaystackClient::playlistFailed, this, &Playlists::playlistFailed);
         connect(m_haystack, &HaystackClient::playlistTracksSent, this, [this](const QString &id, int status) {
@@ -669,6 +670,25 @@ void Playlists::verdictAdded(const QJsonObject &v)
     emit changed();
     emit currentChanged();
     emit selectionChanged();
+}
+
+// A Swap (haystack's ADR 0022): the Original takes the cover's place in the review, as it does in the playlists, or
+// the cover just leaves when the Original is there already. The saved cards don't have the Original, so after a
+// restart it is left out until the review starts again.
+void Playlists::swapAdded(const QJsonObject &s)
+{
+    const QString cover = s.value("track").toString();
+    const int i = m_session.tracks.indexOf(cover);
+    if (i < 0)
+        return;
+    const QString original = s.value("original").toString();
+    if (m_session.tracks.contains(original))
+        m_session.tracks.removeAt(i);
+    else
+        m_session.tracks[i] = original;
+    m_session.done.removeAll(cover);
+    m_cards.remove(cover);
+    save();
 }
 
 // ---- playlists only needle's engine can read ----

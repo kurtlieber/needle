@@ -183,8 +183,11 @@ void HaystackClient::flush()
     setStatus("syncing");
     postBatch("/v1/verdicts", "verdicts", m_outbox.verdicts(), [this] {
         postBatch("/v1/plays", "plays", m_outbox.plays(), [this] {
-            m_flushing = false;
-            fetchState();
+            const bool swaps = m_state.value("server").toMap().value("features").toStringList().contains("swaps");
+            postBatch("/v1/swaps", "swaps", swaps ? m_outbox.swaps() : QJsonArray{}, [this] {
+                m_flushing = false;
+                fetchState();
+            });
         });
     });
 }
@@ -194,6 +197,13 @@ void HaystackClient::addVerdict(const QJsonObject &v)
     m_outbox.addVerdict(v);
     emit statusChanged();
     emit verdictAdded(v);
+    flush();
+}
+
+void HaystackClient::addSwap(const QJsonObject &s)
+{
+    m_outbox.addSwap(s);
+    emit swapAdded(s);
     flush();
 }
 

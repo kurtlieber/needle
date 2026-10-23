@@ -11,7 +11,8 @@ Rectangle {
 
     readonly property var keys: [
         ["1 – 5", "Rate (keeps playing)"], ["Shift + 1 – 5", "Rate and play the next track"],
-        ["P", "Pass"], ["X", "Dislike"], ["Space", "Play or pause"], ["← →", "Back or ahead 10 s"],
+        ["P", "Pass"], ["X", "Dislike"], ["S", "Swap a possible cover for its original (Rate your likes, Playlists)"],
+        ["Space", "Play or pause"], ["← →", "Back or ahead 10 s"],
         ["J", "Jump ahead 30 s"], ["N", "Next track"], ["B", "Back to the previous track"],
         ["Tab", "Next queue: Discoveries, Calibrate, Rate your likes, Playlists"], ["L", "Choose playlists to review"],
         ["G", "Cover glow on or off"], ["M", "Motion: follow the desktop, or not"], ["?", "These shortcuts"], ["Q", "Quit"]]

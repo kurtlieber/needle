@@ -1,9 +1,12 @@
 #include <QDir>
 #include <QFile>
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QProcessEnvironment>
 #include <QSignalSpy>
+#include <QTcpServer>
+#include <QTcpSocket>
 #include <QTemporaryDir>
 #include <QtTest>
 
@@ -56,6 +59,71 @@ static QVariantMap playlistCards(const char *id, const QStringList &tracks)
     }
     return {{"id", pid(id)}, {"items", items}};
 }
+
+// A possible cover (haystack 0.9.0's card.original): Zombie by The Cranberries, found on Spotify as orig
+static QVariantMap coverOf(const QString &id, const QString &reason = "marker")
+{
+    QVariantMap c = card(id);
+    c.insert("original", QVariantMap{{"title", "Zombie"}, {"artist", "The Cranberries"}, {"id", "orig"},
+                                     {"reason", reason}});
+    c.insert("original_check", "done");
+    return c;
+}
+
+static const QVariantMap kSwapServer{{"features", QVariantList{"card.original", "swaps"}}};
+
+// A haystack on a local port that takes every batch it is sent and answers /v1/state with state; it remembers each
+// request's method and path.
+class FakeHaystack : public QTcpServer {
+public:
+    explicit FakeHaystack(const QVariantMap &state) : m_state(state)
+    {
+        connect(this, &QTcpServer::newConnection, this, [this] {
+            while (auto *s = nextPendingConnection())
+                connect(s, &QTcpSocket::readyRead, s, [this, s] { answer(s); });
+        });
+        listen(QHostAddress::LocalHost);
+    }
+    QString url() const { return QStringLiteral("http://127.0.0.1:%1").arg(serverPort()); }
+    QStringList requests;
+
+private:
+    void answer(QTcpSocket *s)
+    {
+        QByteArray &buf = m_buf[s];
+        buf += s->readAll();
+        const int end = buf.indexOf("\r\n\r\n");
+        if (end < 0)
+            return;
+        const QList<QByteArray> lines = buf.left(end).split('\n');
+        int length = 0;
+        for (const auto &l : lines)
+            if (l.toLower().startsWith("content-length:"))
+                length = l.mid(15).trimmed().toInt();
+        if (buf.size() < end + 4 + length)
+            return;
+        const QList<QByteArray> first = lines.first().trimmed().split(' ');
+        const QByteArray body = buf.mid(end + 4, length);
+        buf.clear();
+        requests << QString::fromUtf8(first.value(0) + ' ' + first.value(1));
+        QJsonObject out;
+        if (first.value(0) == "POST") {
+            QJsonArray ids;
+            const auto o = QJsonDocument::fromJson(body).object();
+            for (const auto &v : o.value(o.keys().value(0)).toArray())
+                ids << v.toObject().value("id");
+            out = {{"accepted", ids}, {"rejected", QJsonArray{}}};
+        } else {
+            out = QJsonObject::fromVariantMap(m_state);
+        }
+        const QByteArray json = QJsonDocument(out).toJson(QJsonDocument::Compact);
+        s->write("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nConnection: close\r\nContent-Length: "
+                 + QByteArray::number(json.size()) + "\r\n\r\n" + json);
+        s->disconnectFromHost();
+    }
+    QVariantMap m_state;
+    QHash<QTcpSocket *, QByteArray> m_buf;
+};
 
 class NeedleTests : public QObject {
     Q_OBJECT
@@ -540,6 +608,27 @@ private slots:
         QVERIFY(Insight::playlistLine({}, "#fff").isEmpty());
     }
 
+    void originalLineSaysWhatACoverStandsInFor()
+    {
+        const QStringList f{"card.original"};
+        QVariantMap c{{"original", QVariantMap{{"title", "Zombie & Co"}, {"artist", "The <Cranberries>"}, {"id", "x"},
+                                               {"reason", "marker"}}}};
+        QCOMPARE(Insight::original(c, "#fff", f),
+                 QString::fromUtf8("Possible cover of <b><font color=\"#fff\">Zombie &amp; Co</font></b> by The "
+                                   "&lt;Cranberries&gt;: the title or artist says so."));
+        QVERIFY(Insight::original(c, "#fff", {}).isEmpty());           // an older haystack: no badge
+        QVERIFY(Insight::original(card("a"), "#fff", f).isEmpty());    // nothing flagged
+        QVERIFY(Insight::original(coverOf("a", "isrc"), "#fff", f).endsWith("by The Cranberries: its ISRC belongs to their recording."));
+        QVERIFY(Insight::original(coverOf("a", "rank"), "#fff", f).endsWith(", whose recording is far more popular."));
+        QCOMPARE(Insight::original(coverOf("a", "live"), "#fff", f),
+                 QString("A live version of <b><font color=\"#fff\">Zombie</font></b>, not the studio recording."));
+        // no artist known, and no Original found on Spotify
+        c.insert("original", QVariantMap{{"title", "Zombie"}, {"artist", QVariant()}, {"id", QVariant()}, {"reason", "marker"}});
+        QCOMPARE(Insight::original(c, "#fff", f),
+                 QString::fromUtf8("Possible cover of <b><font color=\"#fff\">Zombie</font></b>: the title or artist says "
+                                   "so. haystack couldn’t find the Original on Spotify."));
+    }
+
     // ---- where haystack is ----
     void configReadsTheServersAndTheTokenFile()
     {
@@ -627,6 +716,44 @@ private slots:
         o.settle({"v1", "p1"});
         QCOMPARE(Outbox(path).size(), 1);
         QCOMPARE(QFile(path).permissions() & (QFileDevice::ReadGroup | QFileDevice::ReadOther), QFileDevice::Permissions());
+        o.addSwap({{"id", "s1"}, {"track", "cv"}, {"original", "orig"}});
+        QCOMPARE(Outbox(path).swaps().size(), 1);
+        QCOMPARE(Outbox(path).size(), 2);
+        o.settle({"s1"});
+        QCOMPARE(Outbox(path).swaps().size(), 0);
+    }
+
+    // a Swap goes out after the verdicts and plays, and only to a haystack that lists the feature swaps: an older
+    // one would answer 404, and needle would take that for offline and try again for ever
+    void aSwapWaitsForAHaystackThatTakesThem()
+    {
+        for (const bool takes : {false, true}) {
+            QTemporaryDir dir;
+            const QString cache = dir.path() + "/cache";
+            const QVariantMap snapshot{{"server", takes ? kSwapServer : QVariantMap{{"features", QVariantList{"card.original"}}}}};
+            QDir().mkpath(cache);
+            QFile cached(cache + "/state.json");
+            QVERIFY(cached.open(QIODevice::WriteOnly));
+            cached.write(QJsonDocument::fromVariant(snapshot).toJson());
+            cached.close();
+            QFile tok(dir.path() + "/token");
+            QVERIFY(tok.open(QIODevice::WriteOnly));
+            tok.write("t");
+            tok.close();
+            FakeHaystack server(snapshot);
+            HaystackClient haystack({server.url()}, dir.path() + "/token", cache, dir.path() + "/state");
+            QSignalSpy arrived(&haystack, &HaystackClient::stateArrived);
+            QSignalSpy added(&haystack, &HaystackClient::swapAdded);
+            // both go in one flush: the verdict on the cover first, then the Swap that takes it back
+            haystack.addVerdict({{"id", "v1"}, {"track", "cv"}, {"kind", "pass"}, {"given_at", "2026-10-23T00:00:00.000Z"}});
+            haystack.addSwap({{"id", "s1"}, {"track", "cv"}, {"original", "orig"}, {"given_at", "2026-10-23T00:00:01.000Z"}});
+            QCOMPARE(added.size(), 1);
+            QVERIFY(arrived.wait(5000));
+            QCOMPARE(server.requests, takes ? QStringList({"POST /v1/verdicts", "POST /v1/swaps", "GET /v1/state"})
+                                            : QStringList({"POST /v1/verdicts", "GET /v1/state"}));
+            QCOMPARE(haystack.pendingSwaps().size(), takes ? 0 : 1);
+            QCOMPARE(haystack.pendingVerdicts().size(), 0);
+        }
     }
 
     // ---- the engine's events ----
@@ -723,6 +850,117 @@ private slots:
         r.rate(4, true);
         QVERIFY(r.queueDone());
         QCOMPARE(haystack.pendingVerdicts().size(), 2);
+    }
+
+    // haystack 0.9.0 (features card.original and swaps): in Rate your likes, S swaps a Possible cover for its
+    // Original, which takes the cover's place and stays until Next though the snapshot doesn't have it yet
+    void aPossibleCoverSwapsForItsOriginal()
+    {
+        QTemporaryDir dir;
+        HaystackClient haystack({"http://127.0.0.1:1"}, dir.path() + "/no-token", dir.path() + "/cache",
+                                dir.path() + "/state");
+        Review r(&haystack, nullptr);
+        const QVariantMap queues{{"discoveries", QVariantMap{{"items", QVariantList{coverOf("dc")}}}},
+                                 {"likes", QVariantMap{{"items", QVariantList{coverOf("cv"), card("l2")}}}}};
+        r.applyState({{"queues", queues}});                       // an older haystack
+        QCOMPARE(r.queue(), QString("discoveries"));
+        QVERIFY(!r.canSwap());
+        r.applyState({{"server", kSwapServer}, {"queues", queues}});
+        QVERIFY(!r.canSwap());                                     // Discoveries: passed or rated as it is
+        r.swap();
+        QCOMPARE(haystack.pendingSwaps().size(), 0);
+        r.switchQueue();
+        QCOMPARE(r.queue(), QString("likes"));
+        QCOMPARE(r.current().value("id").toString(), QString("cv"));
+        QVERIFY(r.canSwap());
+        r.swap();
+        QCOMPARE(haystack.pendingSwaps().size(), 1);
+        const auto s = haystack.pendingSwaps().first().toObject();
+        QCOMPARE(s.value("track").toString(), QString("cv"));
+        QCOMPARE(s.value("original").toString(), QString("orig"));
+        QVERIFY(s.value("given_at").toString().endsWith("Z"));
+        QVERIFY(!s.value("id").toString().isEmpty());
+        QCOMPARE(r.current().value("id").toString(), QString("orig"));
+        QCOMPARE(r.current().value("title").toString(), QString("Zombie"));
+        QCOMPARE(r.current().value("artists").toStringList(), QStringList{"The Cranberries"});
+        QVERIFY(!r.canSwap());
+        QCOMPARE(r.likesLeft(), 2);
+
+        // the snapshot before haystack has the Swap: the cover stays out and the Original stays current
+        r.applyState({{"server", kSwapServer}, {"queues", queues}});
+        QCOMPARE(r.current().value("id").toString(), QString("orig"));
+        QCOMPARE(r.likesLeft(), 2);
+        // haystack's card for the Original fills in the rest
+        r.updateCard({{"id", "orig"}, {"title", "Zombie"}, {"measure", "ok"}, {"original_check", "done"},
+                      {"original", QVariant()}, {"readings", QVariantMap{{"tempo", 84.0}}}});
+        QCOMPARE(r.current().value("measure").toString(), QString("ok"));
+        QCOMPARE(r.current().value("swappedFrom").toString(), QString("cv"));
+        r.rate(4, true);
+        QCOMPARE(r.current().value("id").toString(), QString("l2"));
+        QCOMPARE(haystack.pendingVerdicts().last().toObject().value("track").toString(), QString("orig"));
+    }
+
+    // the Original already in the queue: the cover just leaves, and the Original is current
+    void aSwapToAnOriginalAlreadyQueuedDropsTheCover()
+    {
+        ReviewQueue q;
+        q.reset({card("a"), card("cv"), card("orig")});
+        q.next();
+        QCOMPARE(q.currentId(), QString("cv"));
+        QVERIFY(q.replaceCard("cv", card("orig")));
+        QCOMPARE(q.size(), 2);
+        QCOMPARE(q.currentId(), QString("orig"));
+        QVERIFY(!q.replaceCard("cv", card("orig")));
+        QVERIFY(q.back());
+        QCOMPARE(q.currentId(), QString("a"));
+    }
+
+    // in a Playlist review the Original takes the cover's place, as it does in the playlist; the saved cards don't
+    // have it, so after a restart the review goes on without both
+    void aSwapInAPlaylistReviewTakesTheCoversPlace()
+    {
+        QTemporaryDir dir;
+        const QString cache = dir.path() + "/cache", state = dir.path() + "/state";
+        QFile tok(dir.path() + "/token");
+        QVERIFY(tok.open(QIODevice::WriteOnly));
+        tok.write("t");
+        tok.close();
+        QDir().mkpath(cache + "/playlists");
+        QVariantMap cv = coverOf("cv"), d = card("d");
+        cv.insert("playlists", QStringList{pid("bass")});
+        d.insert("playlists", QStringList{pid("bass")});
+        QFile f(cache + "/playlists/" + pid("bass") + ".json");
+        QVERIFY(f.open(QIODevice::WriteOnly));
+        f.write(QJsonDocument::fromVariant(QVariantMap{{"id", pid("bass")}, {"items", QVariantList{cv, d}}}).toJson());
+        f.close();
+        const QVariantMap playlists{{"items", QVariantList{QVariantMap{
+            {"id", pid("bass")}, {"name", "Wide Mouth Bass"}, {"cover", ""}, {"mine", true}, {"tracks", QStringList{"cv", "d"}},
+            {"current", true}, {"reader", "server"}, {"snapshot_id", "s1"}}}}, {"verdicts", QVariantMap{}}};
+        HaystackClient haystack({"http://127.0.0.1:1"}, dir.path() + "/token", cache, state);
+        Review r(&haystack, nullptr);
+        Playlists p(&haystack, nullptr, state);
+        connect(&p, &Playlists::sessionReady, &r, &Review::startPlaylistReview);
+        r.applyState({{"server", kSwapServer}, {"queues", QVariantMap{}}});
+        p.applyState({{"playlists", playlists}});
+        p.setShuffle(false);
+        p.pickAll();
+        QSignalSpy ready(&p, &Playlists::sessionReady);
+        p.start();
+        QVERIFY(ready.wait(5000));
+        QCOMPARE(r.current().value("id").toString(), QString("cv"));
+        QVERIFY(r.canSwap());
+        r.swap();
+        QCOMPARE(r.current().value("id").toString(), QString("orig"));
+        QCOMPARE(r.current().value("fromPlaylist").toString(), QString("Wide Mouth Bass"));
+        QCOMPARE(r.playlistsTotal(), 2);
+        QCOMPARE(p.session().tracks, QStringList({"orig", "d"}));
+
+        Review r2(&haystack, nullptr);
+        Playlists p2(&haystack, nullptr, state);
+        connect(&p2, &Playlists::sessionReady, &r2, &Review::startPlaylistReview);
+        p2.restore();
+        QCOMPARE(r2.playlistsTotal(), 1);
+        QCOMPARE(haystack.pendingSwaps().size(), 1);
     }
 
     // haystack 0.5.0's Calibrate queue (feature queue.calibrate): a tab and a stop on Tab only when it is listed
