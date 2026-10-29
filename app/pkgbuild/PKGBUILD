@@ -4,7 +4,7 @@
 # both use it). For the AUR, point source= at the v$pkgver tag's archive and pin its checksum.
 pkgname=needle
 # x-release-please-start-version
-pkgver=0.7.0
+pkgver=0.7.1
 # x-release-please-end
 pkgrel=1
 pkgdesc='Review Spotify discoveries and likes: play them, see their Readings against your Baseline, give Verdicts'

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1](https://github.com/kurtlieber/needle/compare/v0.7.0...v0.7.1) (2026-10-29)
+
+
+### Bug Fixes
+
+* **review:** songs Spotify can't play are passed over, and a queue of only them ends ([#26](https://github.com/kurtlieber/needle/issues/26)) ([76167da](https://github.com/kurtlieber/needle/commit/76167da754c19c0d16046aed0b42ab8b1c57569d))
+
 ## [0.7.0](https://github.com/kurtlieber/needle/compare/v0.6.3...v0.7.0) (2026-10-23)
 
 
