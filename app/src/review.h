@@ -41,6 +41,7 @@ class Review : public QObject {
     Q_PROPERTY(QString tabNext READ tabNext NOTIFY changed)
     Q_PROPERTY(QString doneNext READ doneNext NOTIFY changed)
     Q_PROPERTY(bool canSwap READ canSwap NOTIFY changed)
+    Q_PROPERTY(int unplayable READ unplayable NOTIFY changed)
 
 public:
     Review(HaystackClient *haystack, EngineClient *engine, QObject *parent = nullptr);
@@ -79,6 +80,8 @@ public:
     // found on Spotify, in Rate your likes or a Playlist review. Discoveries and Calibrate are passed or rated as
     // they are (haystack's ADR 0022).
     bool canSwap() const;
+    // The tracks of this queue that Spotify can't play here (region, or withdrawn), passed over since needle started.
+    int unplayable() const { return q().unplayable(); }
 
     // For tests and the clock: the snapshot handling without the network.
     void applyState(const QVariantMap &state);
@@ -119,6 +122,7 @@ private:
     static int position(const ReviewQueue &queue);
     void give(const QString &kind, int stars, bool advance);
     void move(bool forward, bool play);
+    void unavailable(const QString &id);
     void loadCurrent(bool play);
     void leaveTrack(bool completed);
     void prefetch();

@@ -141,6 +141,10 @@ Media keys and the Omarchy bar work through MPRIS (`org.mpris.MediaPlayer2.needl
   (haystack's ADR 0021). The picker still counts each release as a song.
   Spotify won't list a Followed playlist for haystack, so needle's engine reads its songs (one playlist at a time,
   while needle runs and is signed in to Spotify) and sends them to haystack (ADR 0008).
+* **Songs Spotify can't play.** A song Spotify won't play here (not offered in your country, or withdrawn) is
+  passed over when needle's engine says so, and stays passed over in every queue until needle quits, so Next and
+  Back go round the rest. It gets no verdict and counts as passed in "30 of 34"; once nothing playable is left, the
+  queue is done and its notice says how many Spotify couldn't play. They are tried again the next time needle starts.
 * **Why a Discovery.** Under the title, the wide layout says which of your tracks it sounds like and where
   haystack found it. When haystack's re-ranker picked it, the line adds the re-ranker's strongest reason
   ("Learned from your Verdicts: close to your 4-5★ tracks") and an outlined chip before the styles gives its

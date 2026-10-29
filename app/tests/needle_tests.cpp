@@ -361,6 +361,41 @@ private slots:
         QCOMPARE(disc.currentId(), QString("c"));
     }
 
+    void aTrackSpotifyCantPlayIsPassedOverAndTheQueueEnds()
+    {
+        // the Classical Drill review: the last songs left are ones Spotify won't play, and Next went round them
+        ReviewQueue q;
+        q.setCards({card("a", rating(3)), card("b"), card("c"), card("d")});
+        QCOMPARE(q.currentId(), QString("b"));
+        QVERIFY(q.markUnplayable("b"));
+        QVERIFY(!q.markUnplayable("x"));
+        QCOMPARE(q.unplayable(), 1);
+        QCOMPARE(q.unreviewed(), 2);
+        QVERIFY(q.next());
+        QCOMPARE(q.currentId(), QString("c"));
+        q.applyVerdict("c", rating(4));
+        QCOMPARE(q.upNext().value("id").toString(), QString("d"));   // not round to b
+        QVERIFY(q.next());
+        QVERIFY(q.markUnplayable("d"));
+        QVERIFY(!q.next());
+        QVERIFY(!q.hasCurrent());                    // done, not b, d, b, d...
+        QCOMPARE(q.unreviewed(), 0);
+        QCOMPARE(q.unplayable(), 2);
+        QVERIFY(q.back());
+        QCOMPARE(q.currentId(), QString("c"));       // Back skips them too
+        QVERIFY(!q.back());
+        // a fresh snapshot or a new start keeps them passed over; a verdict given elsewhere counts as usual
+        q.setCards({card("a", rating(3)), card("b"), card("c", rating(4)), card("d"), card("e")});
+        QCOMPARE(q.currentId(), QString("c"));
+        QCOMPARE(q.upNext().value("id").toString(), QString("e"));
+        QVERIFY(q.next());
+        QCOMPARE(q.currentId(), QString("e"));
+        q.reset({card("b"), card("d", rating(2))});
+        QVERIFY(!q.hasCurrent());
+        QCOMPARE(q.reviewed(), 1);
+        QCOMPARE(q.unplayable(), 1);
+    }
+
     void revisitingPlaysSongsWithAVerdictOnce()
     {
         ReviewQueue q;
@@ -1143,6 +1178,46 @@ private slots:
         r3.rate(5, true);
         QVERIFY(r3.queueDone());
         QCOMPARE(r3.doneNext(), QString());
+    }
+
+    void songsSpotifyCantPlayEndTheQueueInsteadOfGoingRound()
+    {
+        QTemporaryDir dir;
+        HaystackClient haystack({"http://127.0.0.1:1"}, dir.path() + "/no-token", dir.path() + "/cache",
+                                dir.path() + "/state");
+        EngineClient e({}, {});
+        e.handleLine(R"({"event":"auth","state":"ok","user":"me"})");
+        Review r(&haystack, &e);
+        r.applyState({{"queues", QVariantMap{
+            {"discoveries", QVariantMap{{"items", QVariantList{card("a"), card("b"), card("c")}}}},
+            {"likes", QVariantMap{{"items", QVariantList{card("c"), card("l1")}}}}}}});
+        QCOMPARE(e.trackId(), QString("a"));
+        r.rate(4, true);
+        QCOMPARE(e.trackId(), QString("b"));
+        e.handleLine(R"({"event":"unavailable","id":"a"})");       // late, about a track already left
+        QCOMPARE(r.current().value("id").toString(), QString("b"));
+        QCOMPARE(r.unplayable(), 0);
+        e.handleLine(R"({"event":"unavailable","id":"b"})");
+        QCOMPARE(r.current().value("id").toString(), QString("c"));
+        QCOMPARE(e.trackId(), QString("c"));
+        QCOMPARE(r.discoveriesPosition(), 3);
+        e.handleLine(R"({"event":"unavailable","id":"c"})");
+        QVERIFY(r.queueDone());                      // and no load of b again
+        QCOMPARE(e.trackId(), QString("c"));
+        QCOMPARE(r.unplayable(), 2);
+        QCOMPARE(r.discoveriesLeft(), 0);
+        QCOMPARE(r.doneNext(), QString("likes"));
+        // c is passed over in Rate your likes too
+        r.setQueue("likes");
+        QCOMPARE(r.current().value("id").toString(), QString("l1"));
+        QCOMPARE(r.likesLeft(), 1);
+        QCOMPARE(r.unplayable(), 1);
+        // a fresh snapshot doesn't bring them back
+        r.setQueue("discoveries");
+        r.applyState({{"queues", QVariantMap{
+            {"discoveries", QVariantMap{{"items", QVariantList{card("a", rating(4)), card("b"), card("c")}}}},
+            {"likes", QVariantMap{{"items", QVariantList{card("c"), card("l1")}}}}}}});
+        QVERIFY(r.queueDone());
     }
 
     // with Discoveries reviewed, needle opens on Calibrate before Rate your likes

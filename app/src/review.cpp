@@ -38,7 +38,7 @@ Review::Review(HaystackClient *haystack, EngineClient *engine, QObject *parent)
             move(true, true);
         });
         // Spotify can't play it here: on to the next one, playing only if this one was meant to
-        connect(m_engine, &EngineClient::unavailable, this, [this] { move(true, m_loadPlays); });
+        connect(m_engine, &EngineClient::unavailable, this, &Review::unavailable);
         connect(m_engine, &EngineClient::mpris, this, [this](const QString &a) {
             if (a == "next")
                 next();
@@ -138,7 +138,8 @@ QVariantMap Review::upNext() const
 
 int Review::position(const ReviewQueue &queue)
 {
-    return std::min(queue.size(), queue.reviewed() - (queue.currentReviewed() ? 1 : 0) + 1);
+    // the tracks Spotify can't play count as passed, so the last one is "34 of 34"
+    return std::min(queue.size(), queue.reviewed() + queue.unplayable() - (queue.currentReviewed() ? 1 : 0) + 1);
 }
 
 int Review::discoveriesPosition() const
@@ -314,6 +315,19 @@ void Review::rate(int stars, bool advance)
 
 void Review::pass() { give("pass", 0, true); }
 void Review::dislike() { give("dislike", 0, true); }
+
+void Review::unavailable(const QString &id)
+{
+    // a late word about a track already left isn't about the one on screen
+    if (id.isEmpty() || id != m_loaded)
+        return;
+    // it stays passed over in every queue, or a queue of nothing but such tracks goes round them for ever
+    for (auto *queue : {&m_discoveries, &m_calibrate, &m_likes, &m_playlists})
+        if (queue->markUnplayable(id) && queue != &q() && queue->currentId() == id)
+            queue->next();
+    m_loaded.clear();
+    move(true, m_loadPlays);
+}
 
 void Review::next()
 {

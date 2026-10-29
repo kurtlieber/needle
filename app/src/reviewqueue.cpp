@@ -16,6 +16,19 @@ bool ReviewQueue::isReviewed(int i) const
     return v.isValid() && !v.isNull() && !v.toMap().isEmpty();
 }
 
+bool ReviewQueue::isUnplayable(int i) const
+{
+    return !isReviewed(i) && m_unplayable.contains(m_cards[i].toMap().value("id").toString());
+}
+
+int ReviewQueue::unplayable() const
+{
+    int n = 0;
+    for (int i = 0; i < m_cards.size(); ++i)
+        n += isUnplayable(i);
+    return n;
+}
+
 int ReviewQueue::reviewed() const
 {
     int n = 0;
@@ -29,7 +42,7 @@ int ReviewQueue::nextUnreviewed(int from) const
     const int n = m_cards.size();
     for (int k = 1; k <= n; ++k) {
         const int i = ((from < 0 ? -1 : from) + k) % n;
-        if (i != from && !isReviewed(i))
+        if (i != from && !isSettled(i))
             return i;
     }
     return -1;
@@ -115,6 +128,15 @@ bool ReviewQueue::replaceCard(const QString &id, const QVariantMap &card)
     return true;
 }
 
+bool ReviewQueue::markUnplayable(const QString &id)
+{
+    if (indexOf(id) < 0)
+        return false;
+    m_unplayable.insert(id);
+    m_history.removeAll(id);
+    return true;
+}
+
 void ReviewQueue::restart()
 {
     m_current = m_cards.isEmpty() ? -1 : nextUnreviewed(-1);
@@ -174,14 +196,15 @@ bool ReviewQueue::next()
 {
     const int i = m_cards.isEmpty() ? -1 : nextUnreviewed(m_current);
     if (i < 0) {
-        // nothing else waits; if the current one has its verdict now, the queue is done
-        if (m_current >= 0 && isReviewed(m_current)) {
-            m_history << currentId();
+        // nothing else waits; if the current one has its verdict now (or can't play), the queue is done
+        if (m_current >= 0 && isSettled(m_current)) {
+            if (!isUnplayable(m_current))
+                m_history << currentId();
             m_current = -1;
         }
         return false;
     }
-    if (m_current >= 0)
+    if (m_current >= 0 && !isUnplayable(m_current))
         m_history << currentId();
     m_current = i;
     return true;
@@ -191,7 +214,7 @@ bool ReviewQueue::back()
 {
     while (!m_history.isEmpty()) {
         const int i = indexOf(m_history.takeLast());
-        if (i >= 0 && i != m_current) {
+        if (i >= 0 && i != m_current && !isUnplayable(i)) {
             m_current = i;
             return true;
         }
