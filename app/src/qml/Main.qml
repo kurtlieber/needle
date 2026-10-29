@@ -75,18 +75,25 @@ ApplicationWindow {
             Notice {
                 anchors.centerIn: parent
                 visible: review.hasState && review.queueDone && !win.picking
+                // the songs Spotify can't play here, passed over (they would only go round and round)
+                property string skipped: review.unplayable === 0 ? ""
+                    : (review.unplayable === 1 ? "Spotify can't play 1 song here" : "Spotify can't play "
+                       + review.unplayable + " songs here") + " (not offered in your country, or withdrawn), so "
+                      + (review.unplayable === 1 ? "it has" : "they have") + " no verdict."
                 title: review.queue === "discoveries" ? "This week's Discoveries are reviewed"
                        : review.queue === "calibrate" ? "Calibrate is done for now"
-                       : review.queue === "playlists" ? "These playlists are reviewed" : "Every like has a Rating"
-                body: review.queue === "discoveries"
+                       : review.queue === "playlists" ? "These playlists are reviewed"
+                       : skipped ? "Every like Spotify can play has a Rating" : "Every like has a Rating"
+                body: [review.queue === "discoveries"
                       ? (review.nextBatchText ? "The next batch lands " + review.nextBatchText + ". " : "")
                         + (review.doneNext === "calibrate"
                            ? (review.calibrateLeft === 1 ? "1 song in Calibrate still needs a verdict."
                               : review.calibrateLeft + " songs in Calibrate still need a verdict.")
                            : review.likesLeft > 0 ? review.likesLeft + " liked songs still have no Rating." : "")
                       : review.queue === "calibrate" ? "haystack asks about more songs each week."
-                      : review.queue === "playlists" ? "Every song in this review has a verdict now."
-                      : "New likes show up here after the next sync."
+                      : review.queue === "playlists"
+                        ? (skipped ? "Every song Spotify can play has a verdict now." : "Every song in this review has a verdict now.")
+                      : "New likes show up here after the next sync.", skipped].filter(t => t !== "").join(" ")
                 action: review.queue === "playlists" ? "Choose more playlists"
                         : review.doneNext === "calibrate" ? "Calibrate"
                         : review.doneNext === "likes" ? "Rate your likes"

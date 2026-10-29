@@ -11,7 +11,8 @@
 // Next goes to the next track without a verdict (wrapping round); a verdict marks a card reviewed and stays on
 // it; Back returns to the tracks visited before, reviewed or not, so a verdict can be changed. A queue that
 // revisits (a Playlist review with "Skip songs with a verdict" off) plays songs that already have a verdict too:
-// there a song counts as reviewed once it gets a verdict in this queue.
+// there a song counts as reviewed once it gets a verdict in this queue. A track Spotify can't play (unplayable) is
+// passed over like a reviewed one, so the queue ends once every track left is one Spotify won't play.
 class ReviewQueue {
 public:
     // Replace the cards (a fresh /v1/state). The current track stays current if it is still in the queue, or if
@@ -26,10 +27,16 @@ public:
     // A Swap: the card takes the place of track id, or, when it is in the queue already, the track just leaves and
     // the card is current if the track was. -> false when the track isn't here.
     bool replaceCard(const QString &id, const QVariantMap &card);
+    // Spotify can't play track id here (needle's engine said so): Next, Up next and Back pass over it from now on,
+    // through fresh snapshots and a new start, until needle restarts. -> false when the track isn't here.
+    bool markUnplayable(const QString &id);
 
     int size() const { return m_cards.size(); }
     int reviewed() const;
-    int unreviewed() const { return size() - reviewed(); }
+    // the tracks without a verdict that can still play
+    int unreviewed() const { return size() - reviewed() - unplayable(); }
+    // the tracks without a verdict that Spotify can't play
+    int unplayable() const;
     bool hasCurrent() const { return m_current >= 0; }
     bool currentReviewed() const { return m_current >= 0 && isReviewed(m_current); }
     bool revisits() const { return m_revisit; }
@@ -53,10 +60,14 @@ private:
     int indexOf(const QString &id) const;
     int nextUnreviewed(int from) const;
     bool isReviewed(int i) const;
+    bool isUnplayable(int i) const;
+    // passed over by Next: a verdict, or Spotify can't play it
+    bool isSettled(int i) const { return isReviewed(i) || isUnplayable(i); }
 
     QVariantList m_cards;
     int m_current = -1;
     QStringList m_history;
     bool m_revisit = false;
     QSet<QString> m_done;
+    QSet<QString> m_unplayable;
 };
