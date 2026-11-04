@@ -73,7 +73,8 @@ public:
     // only when its feature is listed. Empty for a haystack older than the server object.
     QStringList features() const { return m_features; }
     // The queue Tab goes to (switchQueue), and the one a finished queue's notice offers: the next with something
-    // left to review, or "" when none has.
+    // left to review, or "playlists" (the picker) when none has. "" for the Playlists queue, whose notice offers
+    // the picker itself.
     QString tabNext() const;
     QString doneNext() const;
     // haystack 0.9.0 on (features card.original and swaps): the current track is a Possible cover with its Original

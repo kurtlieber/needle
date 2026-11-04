@@ -136,7 +136,9 @@ server's firewall allows port 8517. More settings: [docs/reference.md, "Settings
 | `L` | Choose which playlists to review |
 | `?` | Every shortcut |
 
-A song Spotify can't play in your country is skipped, and a queue whose last songs are all like that is done.
+A song Spotify can't play in your country is skipped, and a queue whose last songs are all like that is done. A
+finished queue keeps the queue tabs at the top and offers the next queue with songs left, or your playlists when
+nothing else is.
 
 What a rating does in Spotify (likes, the Discoveries playlist) is up to haystack: see
 [How haystack works](https://github.com/kurtlieber/haystack/blob/main/docs/how-it-works.md). Every key, and how

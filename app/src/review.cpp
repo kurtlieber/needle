@@ -189,13 +189,14 @@ QString Review::tabNext() const
 
 QString Review::doneNext() const
 {
+    // with nothing left in the other queues, the Playlists picker: a library always has playlists to review
     const bool calibrate = hasCalibrate() && calibrateLeft() > 0;
     if (m_queue == "discoveries")
-        return calibrate ? "calibrate" : likesLeft() > 0 ? "likes" : "";
+        return calibrate ? "calibrate" : likesLeft() > 0 ? "likes" : "playlists";
     if (m_queue == "calibrate")
-        return likesLeft() > 0 ? "likes" : discoveriesLeft() > 0 ? "discoveries" : "";
+        return likesLeft() > 0 ? "likes" : discoveriesLeft() > 0 ? "discoveries" : "playlists";
     if (m_queue == "likes")
-        return discoveriesLeft() > 0 ? "discoveries" : calibrate ? "calibrate" : "";
+        return discoveriesLeft() > 0 ? "discoveries" : calibrate ? "calibrate" : "playlists";
     return {};
 }
 
