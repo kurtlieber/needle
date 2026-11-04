@@ -103,7 +103,7 @@ a one-time step. Verdicts work before it.
 | `M` | Motion: follow the desktop's animation setting, or override it |
 | `?` | All shortcuts |
 | `Q` | Quit |
-| `Enter` | Sign in to Spotify (when asked) |
+| `Enter` | Sign in to Spotify (when asked), or a finished queue's button |
 
 Choosing playlists (the Playlists tab, or `L`; during a review, `L` or a click on the Playlists tab or the review's
 chip):
@@ -145,6 +145,10 @@ Media keys and the Omarchy bar work through MPRIS (`org.mpris.MediaPlayer2.needl
   passed over when needle's engine says so, and stays passed over in every queue until needle quits, so Next and
   Back go round the rest. It gets no verdict and counts as passed in "30 of 34"; once nothing playable is left, the
   queue is done and its notice says how many Spotify couldn't play. They are tried again the next time needle starts.
+* **A finished queue.** When a queue has nothing left, its notice sits under the top bar, so every queue tab
+  still works (the compact layout has "Next queue" instead, as `Tab`). Its button, or `Enter`, goes to the next
+  queue with songs left: Calibrate, Rate your likes or Discoveries. When none has, it opens the Playlists picker
+  (`L`), since your library always has playlists to review.
 * **Why a Discovery.** Under the title, the wide layout says which of your tracks it sounds like and where
   haystack found it. When haystack's re-ranker picked it, the line adds the re-ranker's strongest reason
   ("Learned from your Verdicts: close to your 4-5★ tracks") and an outlined chip before the styles gives its

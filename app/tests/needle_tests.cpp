@@ -1150,11 +1150,11 @@ private slots:
         QCOMPARE(r.doneNext(), QString("calibrate"));    // Discoveries are done; Calibrate still has two
         r.setQueue("calibrate");
         QCOMPARE(r.tabNext(), QString("likes"));
-        QCOMPARE(r.doneNext(), QString());               // not done yet
+        QCOMPARE(r.doneNext(), QString("playlists"));    // (read only once Calibrate is done)
         r.rate(3, true);
         r.pass();
         QVERIFY(r.queueDone());
-        QCOMPARE(r.doneNext(), QString());               // nothing left anywhere
+        QCOMPARE(r.doneNext(), QString("playlists"));    // nothing left anywhere: the Playlists picker
 
         // Rate your likes done with Discoveries left: back to Discoveries first (a fresh outbox: the verdicts above
         // would count as given)
@@ -1177,7 +1177,7 @@ private slots:
         QCOMPARE(r3.current().value("id").toString(), QString("l1"));
         r3.rate(5, true);
         QVERIFY(r3.queueDone());
-        QCOMPARE(r3.doneNext(), QString());
+        QCOMPARE(r3.doneNext(), QString("playlists"));
     }
 
     void songsSpotifyCantPlayEndTheQueueInsteadOfGoingRound()

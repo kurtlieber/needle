@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Controls.Material
+import QtQuick.Layouts
 
 ApplicationWindow {
     id: win
@@ -24,6 +25,18 @@ ApplicationWindow {
     // The Playlists queue shows the picker until a Playlist review starts, and again on L.
     readonly property bool picking: review.hasState && review.queue === "playlists"
                                     && (playlists.pickerOpen || !review.hasPlaylistReview)
+    // A finished queue shows its notice under the top bar, so every queue stays a click away.
+    readonly property bool finished: review.hasState && review.queueDone && !picking
+
+    // the finished queue's notice button (and Enter): the next queue with songs left, else the Playlists picker
+    function goOnFromFinished() {
+        if (review.queue === "playlists" || review.doneNext === "playlists") {
+            review.queue = "playlists"
+            playlists.openPicker()
+        } else if (review.doneNext !== "") {
+            review.queue = review.doneNext
+        }
+    }
 
     Backdrop {
         visible: prefs.glow
@@ -59,6 +72,23 @@ ApplicationWindow {
             }
 
             // ---- states with no track to show ----
+            TopBar {
+                visible: win.finished && !win.compact
+                x: 28; width: parent.width - 56
+                onHelpRequested: help.open = !help.open
+            }
+            RowLayout {
+                visible: win.finished && win.compact
+                x: 20; y: 18; width: parent.width - 40
+                Wordmark { size: 15 }
+                Item { Layout.fillWidth: true }
+                Text {
+                    text: "Next queue"
+                    font.family: "Archivo"; font.pointSize: 9.375
+                    color: theme.lightForeground
+                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: review.switchQueue() }
+                }
+            }
             Notice {
                 anchors.centerIn: parent
                 visible: !review.hasState
@@ -74,7 +104,7 @@ ApplicationWindow {
             }
             Notice {
                 anchors.centerIn: parent
-                visible: review.hasState && review.queueDone && !win.picking
+                visible: win.finished
                 // the songs Spotify can't play here, passed over (they would only go round and round)
                 property string skipped: review.unplayable === 0 ? ""
                     : (review.unplayable === 1 ? "Spotify can't play 1 song here" : "Spotify can't play "
@@ -97,12 +127,11 @@ ApplicationWindow {
                 action: review.queue === "playlists" ? "Choose more playlists"
                         : review.doneNext === "calibrate" ? "Calibrate"
                         : review.doneNext === "likes" ? "Rate your likes"
-                        : review.doneNext === "discoveries" ? "Back to Discoveries" : ""
-                actionKey: review.queue === "playlists" ? "L" : review.doneNext === review.tabNext ? "Tab" : ""
-                onActivated: {
-                    if (review.queue === "playlists") playlists.openPicker()
-                    else review.queue = review.doneNext
-                }
+                        : review.doneNext === "discoveries" ? "Back to Discoveries"
+                        : review.doneNext === "playlists" ? "Choose playlists to review" : ""
+                actionKey: review.queue === "playlists" || review.doneNext === "playlists" ? "L"
+                           : review.doneNext === review.tabNext ? "Tab" : ""
+                onActivated: win.goOnFromFinished()
             }
 
             HelpOverlay { id: help; picking: win.picking }
@@ -145,8 +174,7 @@ ApplicationWindow {
                 case Qt.Key_Q: Qt.quit(); break
                 case Qt.Key_Return: case Qt.Key_Enter:
                     if (engine.auth === "needed" || engine.auth === "error") engine.login()
-                    else if (review.queueDone && review.queue === "playlists") playlists.openPicker()
-                    else if (review.queueDone) review.switchQueue()
+                    else if (review.queueDone) win.goOnFromFinished()
                     break
                 default: e.accepted = false
                 }
