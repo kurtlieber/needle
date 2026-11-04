@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.2](https://github.com/kurtlieber/needle/compare/v0.7.1...v0.7.2) (2026-11-04)
+
+
+### Bug Fixes
+
+* **app:** a finished queue keeps the queue tabs and always offers a way on ([#28](https://github.com/kurtlieber/needle/issues/28)) ([6e0f995](https://github.com/kurtlieber/needle/commit/6e0f9957dd66b566777aa1e4037335a795060009))
+
 ## [0.7.1](https://github.com/kurtlieber/needle/compare/v0.7.0...v0.7.1) (2026-10-29)
 
 
