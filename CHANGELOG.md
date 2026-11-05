@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/kurtlieber/needle/compare/v0.7.2...v0.8.0) (2026-11-05)
+
+
+### Features
+
+* **review:** a harmonic movement scale on the song card (dotfiles [#450](https://github.com/kurtlieber/needle/issues/450)) ([#30](https://github.com/kurtlieber/needle/issues/30)) ([a3fb6c5](https://github.com/kurtlieber/needle/commit/a3fb6c5e28da33071a8de35c5b5c1c94a910d942))
+
 ## [0.7.2](https://github.com/kurtlieber/needle/compare/v0.7.1...v0.7.2) (2026-11-04)
 
 
