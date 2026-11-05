@@ -248,9 +248,10 @@ Item {
             id: scales
             y: summaryBox.y + summaryBox.height + 4
             width: parent.width
-            readonly property real rowHeight: Math.max(56, Math.min(80, (right.height - y) / 6))
+            readonly property real rowHeight: Math.max(56, Math.min(80, (right.height - y) / Math.max(6, scaleRows.count)))
             Repeater {
-                model: insight.scaleTraits
+                id: scaleRows
+                model: insight.scaleTraits(review.features)
                 delegate: Item {
                     required property var modelData
                     required property int index

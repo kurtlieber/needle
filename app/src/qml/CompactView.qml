@@ -126,17 +126,29 @@ Item {
             color: theme.foreground
         }
 
-        ColumnLayout {
+        // The scales scroll when the window is too short for all of them, so the verdict dock stays on screen.
+        Flickable {
+            id: scales
             Layout.topMargin: 14
             Layout.fillWidth: true
-            spacing: 4
-            Repeater {
-                model: insight.scaleTraits
-                delegate: MiniTraitRow {
-                    required property var modelData
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 60
-                    trait: modelData; readings: v.readings; baselines: v.baselines
+            Layout.fillHeight: true
+            Layout.preferredHeight: contentHeight
+            Layout.maximumHeight: contentHeight
+            Layout.minimumHeight: Math.min(contentHeight, 128)
+            contentHeight: scaleColumn.implicitHeight
+            boundsBehavior: Flickable.StopAtBounds
+            clip: true
+            Column {
+                id: scaleColumn
+                width: scales.width
+                spacing: 4
+                Repeater {
+                    model: insight.scaleTraits(review.features)
+                    delegate: MiniTraitRow {
+                        required property var modelData
+                        width: scaleColumn.width
+                        trait: modelData; readings: v.readings; baselines: v.baselines
+                    }
                 }
             }
         }
