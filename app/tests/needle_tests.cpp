@@ -217,6 +217,39 @@ private slots:
         QCOMPARE(Insight::position("loudness", -5), 0.75);
     }
 
+    void harmonyIsAScaleOnlyWhenHaystackListsIt()
+    {
+        auto keys = [](const QVariantList &l) {
+            QStringList out;
+            for (const auto &t : l)
+                out << t.toMap().value("key").toString();
+            return out;
+        };
+        // a haystack before 0.13.0: the six scales as before
+        QCOMPARE(keys(Insight::scaleTraits({})), (QStringList{"valence", "energy", "danceability", "acousticness",
+                                                              "instrumentalness", "loudness"}));
+        const auto with = Insight::scaleTraits({"rerank", "trait.harmony"});
+        QCOMPARE(with.size(), 7);
+        const auto h = with.last().toMap();
+        QCOMPARE(h.value("key").toString(), QString("harmony"));
+        QCOMPARE(h.value("name").toString(), QString("Harmonic movement"));
+        QCOMPARE(h.value("lowPole").toString(), QString("repetitive"));
+        QCOMPARE(h.value("highPole").toString(), QString("varied"));
+        QCOMPARE(Insight::format("harmony", 0.1234), QString("0.12"));
+        QCOMPARE(Insight::position("harmony", 0.175), 0.5);
+        QCOMPARE(Insight::position("harmony", 0.02), 0.0);
+        // a track the backfill hasn't reached: no Reading, a dash
+        QCOMPARE(Insight::format("harmony", QVariant()), QString::fromUtf8("–"));
+
+        const QVariantMap base{{"energy", QVariantMap{{"lo", 0.70}, {"hi", 0.88}, {"n", 380}}},
+                               {"harmony", QVariantMap{{"lo", 0.18}, {"hi", 0.23}, {"n", 380}}}};
+        QCOMPARE(Insight::summary({{"energy", 0.95}, {"harmony", 0.09}}, base).value("lead").toString(),
+                 QString("More intense and more repetitive"));
+        QCOMPARE(Insight::summary({{"harmony", 0.26}}, base).value("lead").toString(), QString("More varied"));
+        // an older haystack sends no harmony: the sentence is as before
+        QCOMPARE(Insight::summary({{"energy", 0.95}}, base).value("lead").toString(), QString("More intense"));
+    }
+
     void whyLineEscapesNamesAndMentionsExploration()
     {
         const QVariantMap why{{"sounds_like", QVariantMap{{"title", "Cradles"}, {"artist", "Sub <Urban>"}}},

@@ -22,9 +22,9 @@ next picks get better.
   liked in Spotify but never rated), and any of your **Playlists**. A song comes up once, however many of them it's
   on. In Rate your likes and your Playlists, a rating on one of its albums (the original, a remaster, a best-of)
   counts for all of them, with haystack 0.8.0 or newer.
-- **See how it sounds.** Tempo, valence (sad to happy), energy, danceability, acousticness, instrumentalness and
-  loudness, each shown against your own baseline: "slower, darker and more instrumental than what you usually
-  like".
+- **See how it sounds.** Tempo, valence (sad to happy), energy, danceability, acousticness, instrumentalness,
+  loudness and harmonic movement (repetitive to varied, with haystack 0.13.0 or newer), each shown against your own
+  baseline: "slower, darker and more repetitive than what you usually like".
 - **Rate without stopping.** `1`–`5` rates the song, `Shift` + a number rates it and moves on, `P` passes, `X`
   dislikes. The music keeps playing while you decide.
 - **Catch the covers.** A song that may be a cover, a karaoke or tribute version or a live take says which
@@ -149,8 +149,8 @@ needle behaves offline and with several servers: [docs/reference.md](docs/refere
 **Planned**
 
 - **Rate your own music files.** Review and rate songs from your local music folder, not only from Spotify.
-- **Find music by how it sounds.** Search your library or music folder by the seven traits: tempo, valence,
-  energy, danceability, acousticness, instrumentalness and loudness.
+- **Find music by how it sounds.** Search your library or music folder by the traits: tempo, valence,
+  energy, danceability, acousticness, instrumentalness, loudness and harmonic movement.
 - **macOS and Android.**
 - **Sign haystack in to Spotify from needle,** so setting up haystack's Spotify access is a click instead of a
   copy-and-paste.

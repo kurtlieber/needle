@@ -11,12 +11,12 @@ struct TraitInfo {
     QString key, name, unit, lowPole, highPole, lower, higher;
     double min, max, major, minor;
     int decimals;
+    QString feature;    // the haystack feature that brings this Trait (ADR 0014); empty for the first seven
 };
 
 class Insight : public QObject {
     Q_OBJECT
     Q_PROPERTY(QVariantList traits READ traitList CONSTANT)
-    Q_PROPERTY(QVariantList scaleTraits READ scaleTraitList CONSTANT)
 
 public:
     using QObject::QObject;
@@ -37,6 +37,8 @@ public:
     Q_INVOKABLE static QString format(const QString &key, const QVariant &value);
     // 0..1 position of a value on the Trait's scale, clamped.
     Q_INVOKABLE static double position(const QString &key, const QVariant &value);
+    // The Traits drawn as scales (all but tempo, the big BPM readout), each only when the server lists its feature.
+    Q_INVOKABLE static QVariantList scaleTraits(const QStringList &features);
     // "Single, 2018" / "Album, 2011" / "2018"
     Q_INVOKABLE static QString albumLine(const QVariantMap &card);
     // "Picked because it sounds like <b>Cradles</b> by Sub Urban (similarity 0.96). Found through Deezer artist
@@ -62,5 +64,4 @@ public:
     Q_INVOKABLE static QString time(qint64 ms);
 
     QVariantList traitList() const;
-    QVariantList scaleTraitList() const;
 };

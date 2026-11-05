@@ -15,6 +15,9 @@ const QList<TraitInfo> &Insight::traits()
         {"acousticness", "Acousticness", "", "electronic", "acoustic", "more electronic", "more acoustic", 0, 1, .25, .05, 2},
         {"instrumentalness", "Instrumentalness", "", "vocal", "instrumental", "more vocal", "more instrumental", 0, 1, .25, .05, 2},
         {"loudness", "Loudness", "LUFS", "quiet", "loud", "quieter", "louder", -20, 0, 5, 1, 1},
+        // haystack's ADR 0027: how much the chords and notes change from bar to bar; Readings run 0.07-0.27
+        {"harmony", "Harmonic movement", "", "repetitive", "varied", "more repetitive", "more varied", 0.05, 0.30,
+         .05, .01, 2, "trait.harmony"},
     };
     return t;
 }
@@ -240,11 +243,11 @@ QVariantList Insight::traitList() const
     return out;
 }
 
-QVariantList Insight::scaleTraitList() const
+QVariantList Insight::scaleTraits(const QStringList &features)
 {
     QVariantList out;
     for (const auto &t : traits())
-        if (t.key != "tempo")       // tempo is the big BPM readout, not a scale
+        if (t.key != "tempo" && (t.feature.isEmpty() || features.contains(t.feature)))
             out << toMap(t);
     return out;
 }
